@@ -7,9 +7,13 @@ npm install
 npm start
 ```
 
+###Heroku link
+
+https://authboiis.herokuapp.com/
+
 ### Endpoints
 
-- GET /users
+- GET [/users](https://authboiis.herokuapp.com/users)
   Shows all users
 - GET /users/:id
   Shows all user info
