@@ -10,11 +10,12 @@ module.exports = server => {
   //register User
 
   server.post("/signup", (req, res, next) => {
-    const { email, password } = req.body;
+    const { email, password, type } = req.body;
 
     const user = new User({
       email,
-      password
+      password,
+      type
     });
 
     bcrypt.genSalt(10, (err, salt) => {
@@ -39,12 +40,16 @@ module.exports = server => {
     try {
       const user = await auth.authenticate(email, password);
       console.log(user);
-      const token = jwt.sign(user.toJSON(), config.JWT_SECRET, {
-        expiresIn: "15m"
-      });
+      const token = jwt.sign(
+        { id: user.id, email: user.email, type: user.type },
+        config.JWT_SECRET,
+        {
+          expiresIn: "15m"
+        }
+      );
 
-      const { iat, exp } = jwt.decode(token);
-      res.send({ iat, exp, token });
+      //const { iat, exp } = jwt.decode(token);
+      //res.send({ iat, exp, token });
 
       next();
     } catch (err) {
@@ -63,8 +68,6 @@ module.exports = server => {
   });
 
   server.get("/users/:id", async (req, res, next) => {
-    const payload = jwt.decode(req.header("Authorization").split(" ")[1]);
-    console.log(payload);
     try {
       const users = await User.findById(req.params.id);
       res.send(users);
@@ -100,18 +103,40 @@ module.exports = server => {
     }
   });
 
-  //delete user
-  server.del("/users/:id", async (req, res, next) => {
-    try {
-      const user = await User.findOneAndRemove({ _id: req.params.id });
-      res.send(204);
-      next();
-    } catch (err) {
-      return next(
-        new errors.ResourceNotFoundError(
-          `There is no user with the id ${req.params.id}`
-        )
-      );
+  function owner(req) {
+    const bearer = req.header("Authorization");
+    const token = bearer.split(" ")[1];
+    const payload = jwt.decode(token);
+
+    if (payload.id == req.params.id) {
+      console.log("Its you!");
+      return true;
+    } else {
+      console.log("Its not you!");
+      return false;
     }
-  });
+  }
+
+  //delete user
+  server.del(
+    "/users/:id",
+    rjwt({ secret: config.JWT_SECRET }),
+    async (req, res, next) => {
+      try {
+        if (owner(req)) {
+          const user = await User.findOneAndRemove({ _id: req.params.id });
+          res.send(204);
+          next();
+        } else {
+          return next(new errors.ResourceNotFoundError("Thats not you, silly"));
+        }
+      } catch (err) {
+        return next(
+          new errors.ResourceNotFoundError(
+            `There is no user with the id ${req.params.id}`
+          )
+        );
+      }
+    }
+  );
 };
