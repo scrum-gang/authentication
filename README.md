@@ -3,12 +3,17 @@
 ### Quick Start
 
 ```bash
+git clone https://github.com/scrum-gang/authentication.git
+cd authentication
 npm install
 npm start
+
 ```
 
 ### Heroku link
 
+(login not working on heroku, i think its timing out, will look into it)
+I can ngrok my computer for now if needed
 https://authboiis.herokuapp.com/
 
 ### Endpoints
