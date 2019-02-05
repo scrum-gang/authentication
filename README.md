@@ -7,7 +7,7 @@ npm install
 npm start
 ```
 
-###Heroku link
+### Heroku link
 
 https://authboiis.herokuapp.com/
 
