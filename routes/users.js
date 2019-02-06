@@ -5,6 +5,7 @@ const rjwt = require("restify-jwt-community");
 const User = require("../models/User");
 const auth = require("../auth");
 const config = require("../config");
+const nodemailer = require('nodemailer'); 
 
 module.exports = server => {
   //register User
@@ -139,4 +140,29 @@ module.exports = server => {
       }
     }
   );
+
+  server.get("/send", async (req, res, next) => {
+    var transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'bogdan.dumitru127@gmail.com',
+        pass: 'yourpassword'
+      }
+    });
+    
+    var mailOptions = {
+      from: 'bogdan.dumitru127@gmail.com',
+      to: 'sebastian.andrade@mail.mcgill.ca',
+      subject: 'AUTHBOIICLIQUE MAKE A HOST SHAKE',
+      text: 'That was easy!'
+    };
+    
+    transporter.sendMail(mailOptions, function(error, info){
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    }); 
+  });
 };
