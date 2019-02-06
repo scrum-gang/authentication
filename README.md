@@ -27,7 +27,7 @@ All endpoints require header "Content-type": "application/json"
 - PUT /users/:id
   updates provided fields
 - DELETE (Protected) /users/:id
-  Deletes user. Requires header "Authorization" : "Bearer [INSERT_JWT_FROM_/LOGIN_ENDPOINT]
+  Deletes user. Requires header "Authorization" : "Bearer [INSERT_JWT_FROM_/LOGIN_ENDPOINT]"
 - POST /signup
   Creates account {email, password, type}
 - POST /login
