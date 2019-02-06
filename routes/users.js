@@ -16,7 +16,8 @@ module.exports = server => {
     const user = new User({
       email,
       password,
-      type
+      type,
+      verified: false
     });
 
     bcrypt.genSalt(10, (err, salt) => {
@@ -86,7 +87,7 @@ module.exports = server => {
 
     try {
       const user = await auth.authenticate(email, password);
-      console.log(user);
+      //console.log(user);
       const token = jwt.sign(
         { id: user.id, email: user.email, type: user.type },
         config.JWT_SECRET,
@@ -187,7 +188,7 @@ module.exports = server => {
     }
   );
 
-  server.get("/verify/:header/:payload/:signature", (req, res, next) => {
+  server.get("/verify/:header/:payload/:signature", async (req, res, next) => {
     try {
       const token =
         req.params.header +
@@ -195,8 +196,14 @@ module.exports = server => {
         req.params.payload +
         "." +
         req.params.signature;
+      //console.log(jwt.decode(token));
+      const { email, iat, exp } = jwt.decode(token);
 
-      const { iat, exp } = jwt.decode(token);
+      const user = await User.findOneAndUpdate(
+        { email: email },
+        { verified: true }
+      );
+
       res.send({ iat, exp, token }, 200);
       next();
     } catch (err) {

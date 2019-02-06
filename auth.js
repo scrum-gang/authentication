@@ -7,14 +7,20 @@ exports.authenticate = (email, password) => {
     try {
       const user = await User.findOne({ email });
 
-      bcrypt.compare(password, user.password, (err, isMatch) => {
-        if (err) throw err;
-        if (isMatch) {
-          resolve(user);
-        } else {
-          reject("Authentication failed.");
-        }
-      });
+      console.log(user.verified);
+      if (!user.verified) {
+        reject("Authentication failed.");
+      } else {
+        console.log("boii");
+        bcrypt.compare(password, user.password, (err, isMatch) => {
+          if (err) throw err;
+          if (isMatch) {
+            resolve(user);
+          } else {
+            reject("Authentication failed.");
+          }
+        });
+      }
     } catch (err) {
       //email not found
       reject("Authentication failed");

@@ -15,6 +15,10 @@ const UserSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  verified: {
+    type: Boolean,
+    required: true
+  },
   git: {
     type: String,
     required: false
