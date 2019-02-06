@@ -25,6 +25,8 @@ module.exports = server => {
         user.password = hash;
         try {
           const newUser = await user.save();
+          const host = req.header('Host');
+          sendEmail(host, user)
           res.send(201);
           next();
         } catch (err) {
@@ -33,6 +35,41 @@ module.exports = server => {
       });
     });
   });
+
+  function sendEmail(host, user) {
+    const token = jwt.sign(
+      { email: user.email},
+      config.JWT_SECRET,
+      {
+        expiresIn: "30m"
+      }
+    );
+
+    var transporter = nodemailer.createTransport({
+      service: 'gmail.com',
+      auth: {
+        user: 'bogdan.dumitru127@gmail.com',
+        pass: 'axsbbuevrsjvtcof'
+      }
+    });
+    
+    link="http://"+host+"/verify?id="+token;
+
+    var mailOptions = {
+      from: 'jakey',
+      to: user.email,
+      subject: 'AUTHBOIICLIQUE MAKE A HOST SHAKE',
+      html : "Hello,<br> Please Click on the link to verify your email.<br><a href="+link+">Click here to verify</a>"
+    };
+    
+    transporter.sendMail(mailOptions, function(error, info){
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    }); 
+  }
 
   //auth user
   server.post("/login", async (req, res, next) => {
@@ -49,8 +86,8 @@ module.exports = server => {
         }
       );
 
-      //const { iat, exp } = jwt.decode(token);
-      //res.send({ iat, exp, token });
+      const { iat, exp } = jwt.decode(token);
+      res.send({ iat, exp, token });
 
       next();
     } catch (err) {
@@ -141,28 +178,18 @@ module.exports = server => {
     }
   );
 
-  server.get("/send", async (req, res, next) => {
-    var transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: 'bogdan.dumitru127@gmail.com',
-        pass: 'yourpassword'
-      }
-    });
-    
-    var mailOptions = {
-      from: 'bogdan.dumitru127@gmail.com',
-      to: 'sebastian.andrade@mail.mcgill.ca',
-      subject: 'AUTHBOIICLIQUE MAKE A HOST SHAKE',
-      text: 'That was easy!'
-    };
-    
-    transporter.sendMail(mailOptions, function(error, info){
-      if (error) {
-        console.log(error);
-      } else {
-        console.log('Email sent: ' + info.response);
-      }
-    }); 
+  server.get("/verify/:token", (req, res, next) => {
+    try {
+      const token = req.params.token;
+      const {iat, exp} = jwt.decode(token);
+      res.send({ iat, exp, token }, 200);
+      next();
+    } catch (err) {
+      return next(
+        new errors.UnauthorizedError(
+          'Invalid token.'
+        )
+      )
+    }
   });
 };
