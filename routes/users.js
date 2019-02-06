@@ -101,7 +101,7 @@ module.exports = server => {
 
       next();
     } catch (err) {
-      return next(new errors.UnauthorizedError());
+      return next(new errors.UnauthorizedError(err));
     }
   });
 
@@ -135,11 +135,18 @@ module.exports = server => {
       return next(new errors.InvalidContentError("Expects 'application/json"));
     }
 
+    if (typeof req.body.verified !== "undefined") {
+      return next(
+        new errors.UnauthorizedError("Cannot modify verified field.")
+      );
+    }
+
     try {
       const user = await User.findOneAndUpdate(
         { _id: req.params.id },
         req.body
       );
+
       res.send(200);
       next();
     } catch (err) {
