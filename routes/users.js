@@ -63,13 +63,14 @@ module.exports = server => {
       parts[2];
 
     var mailOptions = {
-      from: "jakey",
+      from: "JobHub Jake",
       to: user.email,
-      subject: "AUTHBOIICLIQUE MAKE A HOST SHAKE",
+      subject: "JobHub Account Verification",
       html:
-        "Hello,<br> Please Click on the link to verify your email.<br><a href=" +
+        "Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
         link +
-        ">Click here to verify</a>"
+        ">Click here to verify</a>" +
+        "<br> Thanks for using JobHub!"
     };
 
     transporter.sendMail(mailOptions, function(error, info) {
