@@ -5,6 +5,7 @@ const rjwt = require("restify-jwt-community");
 const User = require("../models/User");
 const auth = require("../auth");
 const config = require("../config");
+const nodemailer = require("nodemailer");
 
 module.exports = server => {
   //register User
@@ -15,7 +16,8 @@ module.exports = server => {
     const user = new User({
       email,
       password,
-      type
+      type,
+      verified: false
     });
 
     bcrypt.genSalt(10, (err, salt) => {
@@ -24,6 +26,8 @@ module.exports = server => {
         user.password = hash;
         try {
           const newUser = await user.save();
+          const host = req.header("Host");
+          sendEmail(host, user);
           res.send(201);
           next();
         } catch (err) {
@@ -33,13 +37,58 @@ module.exports = server => {
     });
   });
 
+  function sendEmail(host, user) {
+    const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
+      expiresIn: "30m"
+    });
+
+    var transporter = nodemailer.createTransport({
+      service: "gmail.com",
+      auth: {
+        user: "bogdan.dumitru127@gmail.com",
+        pass: "axsbbuevrsjvtcof"
+      }
+    });
+
+    const parts = token.split(".");
+
+    link =
+      "http://" +
+      host +
+      "/verify/" +
+      parts[0] +
+      "/" +
+      parts[1] +
+      "/" +
+      parts[2];
+
+    var mailOptions = {
+      from: "JobHub Jake",
+      to: user.email,
+      subject: "JobHub Account Verification",
+      html:
+        "Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
+        link +
+        ">Click here to verify</a>" +
+        "<br> Thanks for using JobHub!"
+    };
+
+    transporter.sendMail(mailOptions, function(error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log("Email sent: " + info.response);
+      }
+    });
+  }
+
   //auth user
   server.post("/login", async (req, res, next) => {
     const { email, password } = req.body;
 
     try {
       const user = await auth.authenticate(email, password);
-      console.log(user);
+      //console.log(user);
       const token = jwt.sign(
         { id: user.id, email: user.email, type: user.type },
         config.JWT_SECRET,
@@ -48,12 +97,12 @@ module.exports = server => {
         }
       );
 
-      //const { iat, exp } = jwt.decode(token);
-      //res.send({ iat, exp, token });
+      const { iat, exp } = jwt.decode(token);
+      res.send({ iat, exp, token });
 
       next();
     } catch (err) {
-      return next(new errors.UnauthorizedError());
+      return next(new errors.UnauthorizedError(err));
     }
   });
 
@@ -87,11 +136,18 @@ module.exports = server => {
       return next(new errors.InvalidContentError("Expects 'application/json"));
     }
 
+    if (typeof req.body.verified !== "undefined") {
+      return next(
+        new errors.UnauthorizedError("Cannot modify verified field.")
+      );
+    }
+
     try {
       const user = await User.findOneAndUpdate(
         { _id: req.params.id },
         req.body
       );
+
       res.send(200);
       next();
     } catch (err) {
@@ -139,4 +195,27 @@ module.exports = server => {
       }
     }
   );
+
+  server.get("/verify/:header/:payload/:signature", async (req, res, next) => {
+    try {
+      const token =
+        req.params.header +
+        "." +
+        req.params.payload +
+        "." +
+        req.params.signature;
+      //console.log(jwt.decode(token));
+      const { email, iat, exp } = jwt.decode(token);
+
+      const user = await User.findOneAndUpdate(
+        { email: email },
+        { verified: true }
+      );
+
+      res.send({ iat, exp, token }, 200);
+      next();
+    } catch (err) {
+      return next(new errors.UnauthorizedError("Invalid token."));
+    }
+  });
 };
