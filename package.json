@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "test": "mocha --timeout 10000"
   },
   "keywords": [],
   "author": "Seb Andrade",
@@ -21,6 +22,11 @@
     "restify-jwt-community": "^1.0.8"
   },
   "devDependencies": {
-    "nodemon": "^1.18.5"
+    "chai": "^4.2.0",
+    "chai-http": "^4.2.1",
+    "mocha": "^5.2.0",
+    "nodemon": "^1.18.5",
+    "sinon": "^7.2.3",
+    "sinon-mongoose": "^2.2.1"
   }
 }
