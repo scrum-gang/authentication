@@ -5,5 +5,8 @@ module.exports = {
   MONGODB_URI:
     process.env.MONGODB_URI ||
     "mongodb://seb:boiii1@ds121455.mlab.com:21455/authboiis",
+  MONGODB_URI_STAGING:
+    process.env.MONGODB_URI_STAGING || 
+    "mongodb://seb:boiii1@ds129045.mlab.com:29045/authboiis-test",
   JWT_SECRET: process.env.JWT_SECRET || "secret"
 };

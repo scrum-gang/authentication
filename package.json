@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "mocha --timeout 10000"
+    "test": "NODE_ENV=test mocha --timeout 10000",
+    "staging": "NODE_ENV=staging mocha --timeout 10000",
+    "local": "NODE_ENV=test nodemon index.js"
   },
   "keywords": [],
   "author": "Seb Andrade",
@@ -25,8 +27,7 @@
     "chai": "^4.2.0",
     "chai-http": "^4.2.1",
     "mocha": "^5.2.0",
-    "nodemon": "^1.18.5",
-    "sinon": "^7.2.3",
-    "sinon-mongoose": "^2.2.1"
+    "mongodb-memory-server": "^3.0.0",
+    "nodemon": "^1.18.5"
   }
 }
