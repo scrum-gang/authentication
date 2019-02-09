@@ -11,6 +11,13 @@ module.exports = server => {
   //register User
 
   server.post("/signup", (req, res, next) => {
+    if (typeof req.body === "undefined") {
+      return next(
+        new errors.MissingParameterError(
+          "Email, password and type are required."
+        )
+      );
+    }
     const { email, password, type } = req.body;
 
     const user = new User({
@@ -108,6 +115,7 @@ module.exports = server => {
 
   server.get("/users", async (req, res, next) => {
     try {
+      console.log("Users, boii");
       const users = await User.find({});
       res.send(users);
       next();
