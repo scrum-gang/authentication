@@ -138,26 +138,6 @@ module.exports = server => {
     }
   });
 
-  server.get("/logout", (req, res, next) => {
-    try {
-      const html =
-        '<!DOCTYPE html><html><head><title>Boii</title></head><body> <h1>SIKE NIGGA </h1><p><b>you thought<b></p> <div><img src="https://i.imgur.com/tb6tVWz.jpg"  style="width:500px;height:600px;" alt="Italian Trulli"></div> </body></html>';
-
-      res.writeHead(200, {
-        "Content-Length": Buffer.byteLength(html),
-        "Content-Type": "text/html"
-      });
-      res.write(html);
-      res.end();
-
-      //res.send(html);
-
-      next();
-    } catch (err) {
-      return next(new errors.ResourceNotFoundError(err));
-    }
-  });
-
   //update user
   server.put("/users/:id", async (req, res, next) => {
     if (!req.is("application/json")) {
