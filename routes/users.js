@@ -11,6 +11,13 @@ module.exports = server => {
   //register User
 
   server.post("/signup", (req, res, next) => {
+    if (typeof req.body === "undefined") {
+      return next(
+        new errors.MissingParameterError(
+          "Email, password and type are required."
+        )
+      );
+    }
     const { email, password, type } = req.body;
 
     const user = new User({
@@ -108,6 +115,7 @@ module.exports = server => {
 
   server.get("/users", async (req, res, next) => {
     try {
+      console.log("Users, boii");
       const users = await User.find({});
       res.send(users);
       next();
@@ -127,6 +135,26 @@ module.exports = server => {
           `There is no user with the id ${req.params.id}`
         )
       );
+    }
+  });
+
+  server.get("/logout", (req, res, next) => {
+    try {
+      const html =
+        '<!DOCTYPE html><html><head><title>Boii</title></head><body> <h1>SIKE NIGGA </h1><p><b>you thought<b></p> <div><img src="https://i.imgur.com/tb6tVWz.jpg"  style="width:500px;height:600px;" alt="Italian Trulli"></div> </body></html>';
+
+      res.writeHead(200, {
+        "Content-Length": Buffer.byteLength(html),
+        "Content-Type": "text/html"
+      });
+      res.write(html);
+      res.end();
+
+      //res.send(html);
+
+      next();
+    } catch (err) {
+      return next(new errors.ResourceNotFoundError(err));
     }
   });
 
