@@ -12,9 +12,11 @@ npm start
 
 ### Heroku link
 
-(login not working on heroku, i think its timing out, will look into it)
-I can ngrok my computer for now if needed
-https://authboiis.herokuapp.com/
+Heroku deployment working now, deploys on both staging and production environments:
+- Staging: https://jobhub-authentication-staging.herokuapp.com/ 
+- Production: https://jobhub-authentication.herokuapp.com/ 
+
+Staging deploys from development branch, productions from master.
 
 ### Endpoints
 

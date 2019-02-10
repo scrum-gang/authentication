@@ -30,7 +30,6 @@ if (isTestEnv) {
 } else {
 	server.listen(config.PORT, () => {
 		mongoose.set("useFindAndModify", false);
-		console.log("DB URI: ", (process.env.NODE_ENV == "staging") ? config.MONGODB_URI_STAGING : config.MONGODB_URI);
 		mongoose.connect(((process.env.NODE_ENV == "staging") ? config.MONGODB_URI_STAGING : config.MONGODB_URI), { useNewUrlParser: true });
 	});
 }
