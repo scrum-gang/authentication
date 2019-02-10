@@ -7,12 +7,12 @@ cache:
 script:
   - npm test
   - npm run staging
-before_deply:
+before_deploy:
   if: branch = production
     - export NODE_ENV=staging
 deploy:
   provider: heroku
-  app:
+  app: 
     master: jobhub-authentication
     production: jobhub-authentication-prod
   api_key:
