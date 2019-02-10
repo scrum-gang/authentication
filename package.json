@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "NODE_ENV=test mocha --recursive --timeout 10000 --exit",
+    "test": "npm run lint && npm run mocha",
+    "lint": "eslint models/** routes/** test/** *.js",
+    "mocha": "NODE_ENV=test mocha --recursive --timeout 10000 --exit",
     "staging": "NODE_ENV=staging mocha --recursive --timeout 10000 --exit"
   },
   "keywords": [],
@@ -25,6 +27,7 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-http": "^4.2.1",
+    "eslint": "^5.13.0",
     "mocha": "^5.2.0",
     "mongodb-memory-server": "^3.0.0",
     "nodemon": "^1.18.5"
