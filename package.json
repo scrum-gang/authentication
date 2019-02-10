@@ -6,9 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "NODE_ENV=test mocha --timeout 10000 --exit",
-    "staging": "NODE_ENV=staging mocha --timeout 10000 --exit",
-    "local": "NODE_ENV=test nodemon index.js"
+    "test": "NODE_ENV=test mocha --recursive --timeout 10000 --exit",
+    "staging": "NODE_ENV=staging mocha --recursive --timeout 10000 --exit"
   },
   "keywords": [],
   "author": "Seb Andrade",
