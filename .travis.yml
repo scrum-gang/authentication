@@ -1,0 +1,13 @@
+language: node_js
+node_js:
+  - "stable"
+cache:
+  directories:
+    - "node_modules"
+deploy:
+  provider: heroku
+  app:
+    master: jobhub-authentication
+    production: jobhub-authentication-prod
+  api_key:
+    secure: byMKgAyUzWLAZjjBkwvo2YILmECGb3ex8IoRZgTAV4Ia4JapJF59WIMLfod6QoSAQNrY4XOFPixA/L8oLCTdBO2/gqlOEhYCKkuzUg7aOlAdOCm78Z621wnQ2ewBXTpwiXc4RiHleSPpWgLkG9cQT3e9lkhf/2fdqglv6wGK1KbJaIGZ4QWMZSITNLz3KJaoYheyW3bocIcVT5mXX9tK5xp8TBKbJ3gCqH5dNwZKLlx2vxLFIVumEXt7gbfOSMrpkwEpJgRdI6HiEjL4kpYY8SN9451g+fTrQj/YbHczove25NUN3hQZ8xtHXG972cJ/ePs07N716Qy3vQzlbjCwr/p/CvxFhefN9NPBhZHSPb+5xMnNXBdlr+zfFAKcYjRvmPXGxVyg8iXMRcdf7xC9WR+xfwdvAPRLH8EkQBoVOsZnhUx0Gxg32aAl8wn7iGufuvGYXikCHIACkcPTlNiD3gaGZ/wfI2cQ6lpyLSYKtOIIchqeUWzxLkqedgn6+sDidRi0FK3X0s6bMTNalyPV7dDrZYvZY4VEDxregByuSxkFZ0rCR/8mjy35opKNZISZ3mqTOyl8PKtsH9E2dJrko/zbMofLyxfJ79HM/qfpp25WAoSePVJOVEA8kfR0AFAvVlTvM0CgnJ9e49qHUThScYFdHzuVoAi8Ia5rFxDTVFw=
