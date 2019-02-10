@@ -35,7 +35,8 @@ module.exports = server => {
           const newUser = await user.save();
           const host = req.header("Host");
           sendEmail(host, user);
-          res.send(201);
+          // console.log(newUser)
+          res.send(201, {"_id": newUser.id});
           next();
         } catch (err) {
           return next(new errors.InternalError(err.message));
@@ -149,21 +150,27 @@ module.exports = server => {
       );
     }
 
-    try {
-      const user = await User.findOneAndUpdate(
-        { _id: req.params.id },
-        req.body
-      );
-
-      res.send(200);
-      next();
-    } catch (err) {
-      return next(
-        new errors.ResourceNotFoundError(
-          `There is no user with the id ${req.params.id}`
-        )
-      );
-    }
+    const updatedUser = req.body;
+    bcrypt.genSalt(10, (err, salt) => {
+      bcrypt.hash(updatedUser.password, salt, async (err, hash) => {
+        updatedUser.password = hash;
+        try {
+          const user = await User.findOneAndUpdate(
+            { _id: req.params.id },
+            updatedUser
+          );
+    
+          res.send(200);
+          next();
+        } catch (err) {
+          return next(
+            new errors.ResourceNotFoundError(
+              `There is no user with the id ${req.params.id}`
+            )
+          );
+        }
+      });
+    });
   });
 
   function owner(req) {
