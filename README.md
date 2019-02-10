@@ -16,7 +16,7 @@ Heroku deployment working now, deploys on both staging and production environmen
 - Staging: https://jobhub-authentication-staging.herokuapp.com/ 
 - Production: https://jobhub-authentication.herokuapp.com/ 
 
-Staging deploys from development branch, productions from master.
+Staging deploys from development branch, production from master.
 
 ### Endpoints
 
