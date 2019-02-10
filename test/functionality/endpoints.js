@@ -1,11 +1,8 @@
-// process.env.NODE_ENV = "test";
-
 const chai = require("chai");
 const chaiHttp = require("chai-http");
 const should = chai.should();
 
-const mongoose = require("mongoose");
-var User = require("../../models/User");
+const User = require("../../models/User");
 
 const server = require("../../index");
 
@@ -16,6 +13,7 @@ const newUser = {
 };
 
 chai.use(chaiHttp);
+
 describe("Endpoints: functionality", function () {
     beforeEach(function (done) {
         User.deleteMany({}, function (err) {
@@ -196,7 +194,7 @@ describe("Endpoints: functionality", function () {
     });
 
     after(function (done) {
-        server.stop(done);
+        server.stop();
         done();
     });
 });
