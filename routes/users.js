@@ -115,7 +115,6 @@ module.exports = server => {
 
   server.get("/users", async (req, res, next) => {
     try {
-      console.log("Users, boii");
       const users = await User.find({});
       res.send(users);
       next();
