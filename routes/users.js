@@ -36,7 +36,7 @@ module.exports = server => {
           const host = req.header("Host");
           sendEmail(host, user);
           // console.log(newUser)
-          res.send(201, {"_id": newUser.id});
+          res.send(201, { "_id": newUser.id });
           next();
         } catch (err) {
           return next(new errors.InternalError(err.message));
@@ -159,7 +159,7 @@ module.exports = server => {
             { _id: req.params.id },
             updatedUser
           );
-    
+
           res.send(200);
           next();
         } catch (err) {
