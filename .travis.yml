@@ -7,6 +7,9 @@ cache:
 script:
   - npm test
   - npm run staging
+before_deply:
+  if: branch = production
+    - export NODE_ENV=staging
 deploy:
   provider: heroku
   app:
