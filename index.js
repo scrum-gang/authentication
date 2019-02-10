@@ -45,10 +45,19 @@ db.once("open", () => {
 });
 
 function stop() {
-  server.close();
   if (isTestEnv) {
     mongoServer.stop()
   }
+  server.close(function() {
+    console.log("Closed all connections");
+    process.exit()
+  });
+
+  // Force close if taking too long
+  setTimeout(function() {
+    console.error("Could not close all connections in time, force closing");
+    process.exit()
+  }, 10000);
 }
 
 module.exports = server;

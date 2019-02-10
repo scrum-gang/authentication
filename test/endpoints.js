@@ -25,7 +25,6 @@ describe("endpoints", function() {
                 .end(function(err, res) {
                     res.should.have.status(200);
                     res.body.should.be.a('array');
-                    console.log("Body:", res.body)
                     res.body.length.should.be.eql(0);
                     done();
                 });
@@ -33,7 +32,7 @@ describe("endpoints", function() {
     });
 
     after(function(done) {
-        server.stop();
+        server.stop(done);
         done();
     });
 });
