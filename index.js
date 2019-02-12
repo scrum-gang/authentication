@@ -2,6 +2,7 @@ const restify = require("restify");
 const mongoose = require("mongoose");
 const rjwt = require("restify-jwt-community");
 const config = require("./config");
+const corsMiddleware = require("restify-cors-middleware");
 
 const server = restify.createServer();
 
@@ -13,8 +14,18 @@ const mongoServer = isTestEnv ? new mongoMem.MongoMemoryServer() : null;
 // server.use(rjwt({ secret: config.JWT_SECRET }).unless({ path: ["/auth"] }));
 server.use(restify.plugins.bodyParser());
 
+const cors = corsMiddleware({
+	preflightMaxAge: 5, //Optional
+	origins: ["*"],
+	allowHeaders: ["API-Token"],
+	exposeHeaders: ["API-Token-Expiry"]
+});
+
+server.pre(cors.preflight);
+server.use(cors.actual);
+
 if (isTestEnv) {
-	mongoServer.getConnectionString().then((mongoUri) => {
+	mongoServer.getConnectionString().then(mongoUri => {
 		const mongooseOpts = {
 			autoReconnect: true,
 			reconnectTries: Number.MAX_VALUE,
@@ -30,7 +41,12 @@ if (isTestEnv) {
 } else {
 	server.listen(config.PORT, () => {
 		mongoose.set("useFindAndModify", false);
-		mongoose.connect(((process.env.NODE_ENV == "staging") ? config.MONGODB_URI_STAGING : config.MONGODB_URI), { useNewUrlParser: true });
+		mongoose.connect(
+			process.env.NODE_ENV == "staging"
+				? config.MONGODB_URI_STAGING
+				: config.MONGODB_URI,
+			{ useNewUrlParser: true }
+		);
 	});
 }
 
@@ -43,7 +59,7 @@ db.once("open", () => {
 	console.log(`Server started on port ${config.PORT}`);
 });
 
-function stop () {
+function stop() {
 	if (isTestEnv) {
 		mongoServer.stop();
 	}
