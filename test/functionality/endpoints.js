@@ -33,7 +33,7 @@ describe("Endpoints: functionality", function () {
 				done();
 			});
 	});
-  
+
 	// Test /signup POST
 	it("should add a single user on /signup POST", function (done) {
 		chai.request(server)
