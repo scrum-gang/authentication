@@ -224,9 +224,7 @@ module.exports = server => {
 				next();
 			} catch (err) {
 				return next(
-					new errors.ResourceNotFoundError(
-						`There is no user with the id ${req.params.id}`
-					)
+					new errors.ResourceNotFoundError("There is no user with given id")
 				);
 			}
 		}
