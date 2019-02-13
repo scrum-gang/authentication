@@ -36,7 +36,7 @@ module.exports = server => {
 					const host = req.header("Host");
 					sendEmail(host, user);
 					// console.log(newUser)
-					res.send(201, { "_id": newUser.id });
+					res.send(201, { _id: newUser.id });
 					next();
 				} catch (err) {
 					return next(new errors.InternalError(err.message));
@@ -45,7 +45,7 @@ module.exports = server => {
 		});
 	});
 
-	function sendEmail (host, user) {
+	function sendEmail(host, user) {
 		const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
 			expiresIn: "30m"
 		});
@@ -61,27 +61,27 @@ module.exports = server => {
 		const parts = token.split(".");
 
 		const link =
-      "http://" +
-      host +
-      "/verify/" +
-      parts[0] +
-      "/" +
-      parts[1] +
-      "/" +
-      parts[2];
+			"http://" +
+			host +
+			"/verify/" +
+			parts[0] +
+			"/" +
+			parts[1] +
+			"/" +
+			parts[2];
 
 		var mailOptions = {
 			from: "JobHub Jake",
 			to: user.email,
 			subject: "JobHub Account Verification",
 			html:
-        "Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
-        link +
-        ">Click here to verify</a>" +
-        "<br> Thanks for using JobHub!"
+				"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
+				link +
+				">Click here to verify</a>" +
+				"<br> Thanks for using JobHub!"
 		};
 
-		transporter.sendMail(mailOptions, function (error, info) {
+		transporter.sendMail(mailOptions, function(error, info) {
 			if (error) {
 				console.log(error);
 			} else {
@@ -173,7 +173,7 @@ module.exports = server => {
 		});
 	});
 
-	function owner (req) {
+	function owner(req) {
 		const bearer = req.header("Authorization");
 		const token = bearer.split(" ")[1];
 		const payload = jwt.decode(token);
@@ -210,14 +210,34 @@ module.exports = server => {
 		}
 	);
 
+	server.get(
+		"/users/self",
+		rjwt({ secret: config.JWT_SECRET }),
+		async (req, res, next) => {
+			try {
+				const bearer = req.header("Authorization");
+				const token = bearer.split(" ")[1];
+				const payload = jwt.decode(token);
+
+				const users = await User.findById(payload.id);
+				res.send(users);
+				next();
+			} catch (err) {
+				return next(
+					new errors.ResourceNotFoundError("There is no user with given id")
+				);
+			}
+		}
+	);
+
 	server.get("/verify/:header/:payload/:signature", async (req, res, next) => {
 		try {
 			const token =
-        req.params.header +
-        "." +
-        req.params.payload +
-        "." +
-        req.params.signature;
+				req.params.header +
+				"." +
+				req.params.payload +
+				"." +
+				req.params.signature;
 			// console.log(jwt.decode(token));
 			const { email, iat, exp } = jwt.decode(token);
 
