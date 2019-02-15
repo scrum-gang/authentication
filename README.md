@@ -6,11 +6,11 @@ Provides authentication/user management for all jobhub microservices. Uses JWT f
 
 Each user has the following attributes:
 
-- id: A unique ID generated for each user.
-- email: An email address used for login.
-- password: The users password. All passwords are hashed using bcrypt.
-- type: The type of user. Can be Applicant or Recruiter.
-- verified: Whether the user has verfied their email after creating their account. Required to be able to login.
+- `id`: A unique ID generated for each user.
+- `email`: An email address used for login.
+- `password`: The users password. All passwords are hashed using bcrypt.
+- `type`: The type of user. Can be Applicant or Recruiter.
+- `verified`: Whether the user has verfied their email after creating their account. Required to be able to login.
 
 ## Getting Started
 
