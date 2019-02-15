@@ -7,6 +7,7 @@ Returns corresponding user given JWT token.
 **Method :** `GET`
 
 **Header :**
+
 ```json
     "Authorization": "Bearer [token]"
 ```
@@ -16,13 +17,14 @@ Returns corresponding user given JWT token.
 **Code :** `200 OK`
 
 **Body :**
+
 ```json
 {
-    "_id": "[User ID]",
-    "email": "[User email]",
-    "password": "[User password]",
-    "type": "[User type]",
-    "verified": true
+	"_id": "[User ID]",
+	"email": "[User email]",
+	"password": "[User password]",
+	"type": "[User type]",
+	"verified": true
 }
 ```
 
@@ -33,9 +35,10 @@ Returns corresponding user given JWT token.
 **Code :** `401 Unauthorized`
 
 **Body :**
+
 ```json
 {
-    "code": "InvalidCredentials",
-    "message": "caused by JsonWebTokenError: invalid signature"
+	"code": "InvalidCredentials",
+	"message": "caused by JsonWebTokenError: invalid signature"
 }
 ```

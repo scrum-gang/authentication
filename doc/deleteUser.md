@@ -7,6 +7,7 @@ Deletes a user with the corresponding ID. Requires corresponding JWT token.
 **Method :** `DELETE`
 
 **Header :**
+
 ```json
     "Authorization": "Bearer [token]"
 ```
@@ -22,9 +23,10 @@ Deletes a user with the corresponding ID. Requires corresponding JWT token.
 **Code :** `401 Unauthorized`
 
 **Body :**
+
 ```json
 {
-    "code": "InvalidCredentials",
-    "message": "caused by JsonWebTokenError: invalid signature"
+	"code": "InvalidCredentials",
+	"message": "caused by JsonWebTokenError: invalid signature"
 }
 ```

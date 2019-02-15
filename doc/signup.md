@@ -6,12 +6,19 @@ Creates new user with given email, password and type.
 
 **Method :** `POST`
 
+**Header :**
+
+```json
+    "Content-Type": "application/json"
+```
+
 **Input :**
+
 ```json
 {
-    "email": "[valid email]",
-    "password": "[valid password]",
-    "type": "[Applicant || Recruiter]"
+	"email": "[valid email]",
+	"password": "[valid password]",
+	"type": "[Applicant || Recruiter]"
 }
 ```
 
@@ -20,8 +27,9 @@ Creates new user with given email, password and type.
 **Code :** `201 Created`
 
 **Body :**
+
 ```json
 {
-    "_id_": "[ID of new user]",
+	"_id_": "[ID of new user]"
 }
 ```

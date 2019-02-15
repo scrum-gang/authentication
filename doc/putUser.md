@@ -7,16 +7,18 @@ Updates a user with the corresponding ID.
 **Method :** `PUT`
 
 **Header :**
+
 ```json
     "Content-Type": "application/json"
 ```
 
 **Input :**
+
 ```json
 {
-    "email": "[new email]",
-    "password": "[new password]",
-    "type": "[new type]"
+	"email": "[new email]",
+	"password": "[new password]",
+	"type": "[new type]"
 }
 ```
 
@@ -31,6 +33,7 @@ Updates a user with the corresponding ID.
 **Code :** `404 Not Found`
 
 **Body :**
+
 ```json
 {
     "code": "ResourceNotFound",
@@ -44,6 +47,7 @@ Updates a user with the corresponding ID.
 **Code :** `401 Unauthorized`
 
 **Body :**
+
 ```json
 {
     "code": "Unauthorized",
