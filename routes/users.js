@@ -11,8 +11,8 @@ module.exports = server => {
 	// register User
 	function validateEmail(email) 
 	{
-	    var re = /\S+@\S+\.\S+/;
-	    return re.test(email);
+		var re = /\S+@\S+\.\S+/;
+		return re.test(email);
 	}
 
 	server.post("/signup", async (req, res, next) => {
