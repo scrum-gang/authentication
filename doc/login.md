@@ -21,8 +21,8 @@ Returns session token for existing User on succesful login.
 **Body :**
 ```json
 {
-    "iat": [Token issued at],
-    "exp": [Token expiry],
+    "iat": "[Token issued at]",
+    "exp": "[Token expiry]",
     "token": "[JWT token]"
 }
 ```

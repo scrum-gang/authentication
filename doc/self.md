@@ -18,7 +18,7 @@ Returns corresponding user given JWT token.
 **Body :**
 ```json
 {
-    "_id_": "[User ID]",
+    "_id": "[User ID]",
     "email": "[User email]",
     "password": "[User password]",
     "type": "[User type]",

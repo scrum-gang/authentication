@@ -1,4 +1,4 @@
-# Update usrr by id
+# Update user by id
 
 Updates a user with the corresponding ID.
 
