@@ -1,49 +1,52 @@
-# authboiis
+# Authentication - Jobhub
 
-### Quick Start
+## Description
+
+Provides authentication/user management for all jobhub microservices. Uses JWT for authentication.
+
+Each user has the following attributes:
+
+- id: A unique ID generated for each user.
+- email: An email address used for login.
+- password: The users password. All passwords are hashed using bcrypt.
+- type: The type of user. Can be Applicant or Recruiter.
+- verified: Whether the user has verfied their email after creating their account. Required to be able to login.
+
+## Getting Started
 
 ```bash
 git clone https://github.com/scrum-gang/authentication.git
 cd authentication
 npm install
 npm start
-
 ```
 
-### Heroku link
+## Deployment
 
-Heroku deployment working now, deploys on both staging and production environments:
-- Staging: https://jobhub-authentication-staging.herokuapp.com/ 
-- Production: https://jobhub-authentication.herokuapp.com/ 
+Builds are automated using Travis and deployed on Heroku.
 
-Staging deploys from development branch, production from master.
+There are two Heroku deployments:
 
-### Endpoints
+- Staging: <https://jobhub-authentication-staging.herokuapp.com/>
+- Production: <https://jobhub-authentication.herokuapp.com/>
 
-All endpoints require header "Content-type": "application/json"
+The staging deployment should be used for all development/testing purposes, in order to keep production from being poluted with test data.
 
-1. GET [/users](https://authboiis.herokuapp.com/users)
+Please note that any new builds on the **development** branch will **wipe** the staging database.
 
-- Output: [{"_id":"5c5b7085e0f33343ed802ac1","email":"davidritch96@gmail.com","password":"$2a$10$jhR96iulNg2hCqrkehyEK.08I.r1PCmEbqf1cZeKn97LOlteMaoyG","type":"account","verified":true,"__v":0},{"_id":"5c5b75ceb709531fb0e4031a","email":"llcec753@gmail.com","password":"$2a$10$Zn95.vQOTxQeo9pGAPA3JOR8v0rhl9nNdeNZk/7r.hoEOXv5ilgs6","type":"fjdals","verified":false,"__v":0}]
+## Typical usage
 
-2. GET /users/:id
+1. Create user using `/signup`.
+2. Verify new user by clicking link in email received.
+3. Login using `/login`, keep JWT token.
+4. Can get logged in user using `/users/self` and passing token in header.
 
-- Output: {"\_id":"5c5b7085e0f33343ed802ac1","email":"davidritch96@gmail.com","password":"$2a$10\$jhR96iulNg2hCqrkehyEK.08I.r1PCmEbqf1cZeKn97LOlteMaoyG","type":"account","verified":true,"\_\_v":0}
+## API Docs
 
-3. PUT /users/:id
-
-- input: {"email": new_email, "password": new_password, "type": new_type, "git": new_git, "linkedin": new_linkedin}
-- Any of the fileds can be omitted. "verified" cannot be modified from this endpoint.
-
-4. DELETE (Protected) /users/:id
-
-- Deletes user. Requires header "Authorization" : "Bearer [INSERT_JWT_FROM_/LOGIN_ENDPOINT]"
-
-5. POST /signup
-
-- input: {"email": email, "password": password, "type" : "Applicant" || "Recruiter"}
-
-6. POST /login
-
-- input: {"email": "tamere@enshorts.com", "password" : "ericklikes2Dgirls"}
-- output: {"iat" : token issued at, "exp" : token expiration, "token": JWT containing user.id user.email user.type}
+- [Get users](doc/getUsers.md) : `GET /users`
+- [Get user by id](doc/getUserID.md) : `GET /users/:id`
+- [Update user by id](doc/putUser.md) : `PUT /users/:id`
+- [Delete user by id](doc/deleteUser.md) : `DELETE /users/:id`
+- [Signup new user](doc/signup.md) : `POST /signup`
+- [Login existing user](doc/login.md) : `POST /login`
+- [Get user from token](doc/self.md) : `GET /users/self`
