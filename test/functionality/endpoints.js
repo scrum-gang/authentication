@@ -193,8 +193,44 @@ describe("Endpoints: functionality", function () {
 			});
 	});
 
+	// Test /users/self GET
+	it("should send the user associated with the given token on /users/self GET", function (done) {
+		// Add user
+		chai.request(server)
+			.post("/signup")
+			.send(newUser)
+			.end(function (err, res) {
+				const userId = res.body._id;
+
+				User.findOneAndUpdate(
+					{ email: newUser.email },
+					{ verified: true }
+					, function (err, doc, res) {
+						// Login user
+						chai.request(server)
+							.post("/login")
+							.send({ "email": newUser.email, "password": newUser.password })
+							.end(function (err, res) {
+								const { iat, exp, token } = res.body;
+								// Get self
+								chai.request(server)
+									.get("/users/self")
+									.set("Authorization", "Bearer " + token)
+									.send()
+									.end(function (err, res) {
+										res.should.have.status(200);
+										res.body._id.should.equal(userId);
+										done();
+									});
+							});
+					});
+			});
+	});
+
 	after(function (done) {
-		server.stop();
-		done();
+		User.deleteMany({}, function (err) {
+			server.stop();
+			done();
+		});
 	});
 });
