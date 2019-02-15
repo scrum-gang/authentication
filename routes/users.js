@@ -9,8 +9,13 @@ const nodemailer = require("nodemailer");
 
 module.exports = server => {
 	// register User
+	function validateEmail(email) 
+	{
+	    var re = /\S+@\S+\.\S+/;
+	    return re.test(email);
+	}
 
-	server.post("/signup", (req, res, next) => {
+	server.post("/signup", async (req, res, next) => {
 		if (typeof req.body === "undefined") {
 			return next(
 				new errors.MissingParameterError(
@@ -19,6 +24,53 @@ module.exports = server => {
 			);
 		}
 		const { email, password, type } = req.body;
+
+		if (password === "" ) {
+			return next(
+				new errors.MissingParameterError(
+					"Password cannot be empty."
+				)
+			);
+		}
+		if (password.length < 6 ) {
+			return next(
+				new errors.InvalidCredentialsError(
+					"Password must be at least 6 characters."
+				)
+			);
+		}
+		if (password.length > 200 ) {
+			return next(
+				new errors.InvalidCredentialsError(
+					"Password must be at most 200 characters."
+				)
+			);
+		}
+		const lctype=type.toLowerCase();
+		if (lctype.localeCompare("applicant") != 0 && lctype.localeCompare("recruiter") != 0) {
+			return next(
+				new errors.InvalidCredentialsError(
+					"Type must be Applicant or Recruiter."
+				)
+			);
+		}
+
+		if (!validateEmail(email)) {
+			return next(
+				new errors.InvalidCredentialsError(
+					"Please enter a valid email"
+				)
+			);
+		}
+
+		const user1 = await User.findOne({ email });
+		if (!(user1=== null)){
+			return next(
+				new errors.BadRequestError(
+					"Cannot sign up twice with the same email."
+				)
+			);
+		}
 
 		const user = new User({
 			email,
