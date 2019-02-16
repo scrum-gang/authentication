@@ -9,8 +9,7 @@ const nodemailer = require("nodemailer");
 
 module.exports = server => {
 	// register User
-	function validateEmail(email) 
-	{
+	function validateEmail(email) {
 		var re = /\S+@\S+\.\S+/;
 		return re.test(email);
 	}
@@ -25,29 +24,30 @@ module.exports = server => {
 		}
 		const { email, password, type } = req.body;
 
-		if (password === "" ) {
+		if (password === "") {
 			return next(
-				new errors.MissingParameterError(
-					"Password cannot be empty."
-				)
+				new errors.MissingParameterError("Password cannot be empty.")
 			);
 		}
-		if (password.length < 6 ) {
+		if (password.length < 6) {
 			return next(
 				new errors.InvalidCredentialsError(
 					"Password must be at least 6 characters."
 				)
 			);
 		}
-		if (password.length > 200 ) {
+		if (password.length > 200) {
 			return next(
 				new errors.InvalidCredentialsError(
 					"Password must be at most 200 characters."
 				)
 			);
 		}
-		const lctype=type.toLowerCase();
-		if (lctype.localeCompare("applicant") != 0 && lctype.localeCompare("recruiter") != 0) {
+		const lctype = type.toLowerCase();
+		if (
+			lctype.localeCompare("applicant") != 0 &&
+			lctype.localeCompare("recruiter") != 0
+		) {
 			return next(
 				new errors.InvalidCredentialsError(
 					"Type must be Applicant or Recruiter."
@@ -57,18 +57,14 @@ module.exports = server => {
 
 		if (!validateEmail(email)) {
 			return next(
-				new errors.InvalidCredentialsError(
-					"Please enter a valid email"
-				)
+				new errors.InvalidCredentialsError("Please enter a valid email")
 			);
 		}
 
 		const user1 = await User.findOne({ email });
-		if (!(user1=== null)){
+		if (!(user1 === null)) {
 			return next(
-				new errors.BadRequestError(
-					"Cannot sign up twice with the same email."
-				)
+				new errors.BadRequestError("Cannot sign up twice with the same email.")
 			);
 		}
 
@@ -141,6 +137,22 @@ module.exports = server => {
 			}
 		});
 	}
+
+	server.post("/resend", async (req, res, next) => {
+		const { email } = req.body;
+		const user = await User.findOne({ email });
+
+		if (user === null) {
+			return next(new errors.BadRequestError("No user with given email"));
+		} else {
+			if (user.verified) {
+				return next(new errors.BadRequestError("User is already verified."));
+			}
+			const host = req.header("Host");
+			sendEmail(host, user);
+			res.send(200);
+		}
+	});
 
 	// auth user
 	server.post("/login", async (req, res, next) => {
