@@ -9,8 +9,12 @@ const nodemailer = require("nodemailer");
 
 module.exports = server => {
 	// register User
+	function validateEmail(email) {
+		var re = /\S+@\S+\.\S+/;
+		return re.test(email);
+	}
 
-	server.post("/signup", (req, res, next) => {
+	server.post("/signup", async (req, res, next) => {
 		if (typeof req.body === "undefined") {
 			return next(
 				new errors.MissingParameterError(
@@ -19,6 +23,50 @@ module.exports = server => {
 			);
 		}
 		const { email, password, type } = req.body;
+
+		if (password === "") {
+			return next(
+				new errors.MissingParameterError("Password cannot be empty.")
+			);
+		}
+		if (password.length < 6) {
+			return next(
+				new errors.InvalidCredentialsError(
+					"Password must be at least 6 characters."
+				)
+			);
+		}
+		if (password.length > 200) {
+			return next(
+				new errors.InvalidCredentialsError(
+					"Password must be at most 200 characters."
+				)
+			);
+		}
+		const lctype = type.toLowerCase();
+		if (
+			lctype.localeCompare("applicant") != 0 &&
+			lctype.localeCompare("recruiter") != 0
+		) {
+			return next(
+				new errors.InvalidCredentialsError(
+					"Type must be Applicant or Recruiter."
+				)
+			);
+		}
+
+		if (!validateEmail(email)) {
+			return next(
+				new errors.InvalidCredentialsError("Please enter a valid email")
+			);
+		}
+
+		const user1 = await User.findOne({ email });
+		if (!(user1 === null)) {
+			return next(
+				new errors.BadRequestError("Cannot sign up twice with the same email.")
+			);
+		}
 
 		const user = new User({
 			email,
@@ -36,7 +84,7 @@ module.exports = server => {
 					const host = req.header("Host");
 					sendEmail(host, user);
 					// console.log(newUser)
-					res.send(201, { "_id": newUser.id });
+					res.send(201, { _id: newUser.id });
 					next();
 				} catch (err) {
 					return next(new errors.InternalError(err.message));
@@ -45,7 +93,7 @@ module.exports = server => {
 		});
 	});
 
-	function sendEmail (host, user) {
+	function sendEmail(host, user) {
 		const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
 			expiresIn: "30m"
 		});
@@ -61,27 +109,27 @@ module.exports = server => {
 		const parts = token.split(".");
 
 		const link =
-      "http://" +
-      host +
-      "/verify/" +
-      parts[0] +
-      "/" +
-      parts[1] +
-      "/" +
-      parts[2];
+			"http://" +
+			host +
+			"/verify/" +
+			parts[0] +
+			"/" +
+			parts[1] +
+			"/" +
+			parts[2];
 
 		var mailOptions = {
 			from: "JobHub Jake",
 			to: user.email,
 			subject: "JobHub Account Verification",
 			html:
-        "Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
-        link +
-        ">Click here to verify</a>" +
-        "<br> Thanks for using JobHub!"
+				"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
+				link +
+				">Click here to verify</a>" +
+				"<br> Thanks for using JobHub!"
 		};
 
-		transporter.sendMail(mailOptions, function (error, info) {
+		transporter.sendMail(mailOptions, function(error, info) {
 			if (error) {
 				console.log(error);
 			} else {
@@ -89,6 +137,22 @@ module.exports = server => {
 			}
 		});
 	}
+
+	server.post("/resend", async (req, res, next) => {
+		const { email } = req.body;
+		const user = await User.findOne({ email });
+
+		if (user === null) {
+			return next(new errors.BadRequestError("No user with given email"));
+		} else {
+			if (user.verified) {
+				return next(new errors.BadRequestError("User is already verified."));
+			}
+			const host = req.header("Host");
+			sendEmail(host, user);
+			res.send(200);
+		}
+	});
 
 	// auth user
 	server.post("/login", async (req, res, next) => {
@@ -173,7 +237,7 @@ module.exports = server => {
 		});
 	});
 
-	function owner (req) {
+	function owner(req) {
 		const bearer = req.header("Authorization");
 		const token = bearer.split(" ")[1];
 		const payload = jwt.decode(token);
@@ -210,14 +274,34 @@ module.exports = server => {
 		}
 	);
 
+	server.get(
+		"/users/self",
+		rjwt({ secret: config.JWT_SECRET }),
+		async (req, res, next) => {
+			try {
+				const bearer = req.header("Authorization");
+				const token = bearer.split(" ")[1];
+				const payload = jwt.decode(token);
+
+				const users = await User.findById(payload.id);
+				res.send(users);
+				next();
+			} catch (err) {
+				return next(
+					new errors.ResourceNotFoundError("There is no user with given id")
+				);
+			}
+		}
+	);
+
 	server.get("/verify/:header/:payload/:signature", async (req, res, next) => {
 		try {
 			const token =
-        req.params.header +
-        "." +
-        req.params.payload +
-        "." +
-        req.params.signature;
+				req.params.header +
+				"." +
+				req.params.payload +
+				"." +
+				req.params.signature;
 			// console.log(jwt.decode(token));
 			const { email, iat, exp } = jwt.decode(token);
 
