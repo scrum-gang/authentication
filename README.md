@@ -1,5 +1,7 @@
 # Authentication - Jobhub
 
+[![Build Status](https://travis-ci.com/scrum-gang/authentication.svg?branch=master)](https://travis-ci.com/scrum-gang/authentication)
+
 ## Description
 
 Provides authentication/user management for all jobhub microservices. Uses JWT for authentication.
