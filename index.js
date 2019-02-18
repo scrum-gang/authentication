@@ -6,7 +6,7 @@ const corsMiddleware = require("restify-cors-middleware");
 
 const server = restify.createServer();
 
-const isTestEnv = process.env.NODE_ENV == "test";
+const isTestEnv = (config.ENV == "test" || config.ENV == "development");
 
 const mongoMem = isTestEnv ? require("mongodb-memory-server") : null;
 const mongoServer = isTestEnv ? new mongoMem.MongoMemoryServer() : null;
@@ -42,7 +42,7 @@ if (isTestEnv) {
 	server.listen(config.PORT, () => {
 		mongoose.set("useFindAndModify", false);
 		mongoose.connect(
-			process.env.NODE_ENV == "staging"
+			config.ENV == "staging"
 				? config.MONGODB_URI_STAGING
 				: config.MONGODB_URI,
 			{ useNewUrlParser: true }
