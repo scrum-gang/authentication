@@ -19,6 +19,7 @@
     "jsonwebtoken": "^8.3.0",
     "mongoose": "^5.3.7",
     "mongoose-timestamp": "^0.6.0",
+    "node-cron": "^2.0.3",
     "nodemailer": "^5.1.1",
     "restify": "^7.2.2",
     "restify-cors-middleware": "^1.1.1",
