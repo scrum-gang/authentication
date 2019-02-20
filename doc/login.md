@@ -12,7 +12,7 @@ Returns session token for existing User on succesful login.
 "Content-type": "application/json"
 ```
 
-**Input :**
+**Body :**
 
 ```json
 {

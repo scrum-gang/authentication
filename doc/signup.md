@@ -12,7 +12,7 @@ Creates new user with given email, password and type.
 "Content-Type": "application/json"
 ```
 
-**Input :**
+**Body :**
 
 ```json
 {

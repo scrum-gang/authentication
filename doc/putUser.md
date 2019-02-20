@@ -12,7 +12,7 @@ Updates a user with the corresponding ID.
 "Content-Type": "application/json"
 ```
 
-**Input :**
+**Body :**
 
 ```json
 {

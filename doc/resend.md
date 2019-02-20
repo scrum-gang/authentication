@@ -12,7 +12,7 @@ Resends the verfication email for an unverified user.
 "Content-type": "application/json"
 ```
 
-**Input :**
+**Body :**
 
 ```json
 {
