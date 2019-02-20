@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const InvalidTokenSchema = new mongoose.Schema({
-	username: {
+	email: {
 		type: String,
 		required: true
 	},

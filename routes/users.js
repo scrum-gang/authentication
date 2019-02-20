@@ -238,12 +238,17 @@ module.exports = server => {
 		});
 	});
 
-	var isRevokedCallback = function(req, payload, done) {
+	var isRevokedCallback = async function(req, payload, done) {
 		var iat = payload.iss;
 		var tokenId = payload.jti;
 
-		console.log(payload);
-		done(null, false);
+		if (await InvalidToken.findOne({iat: payload.iat, email: payload.email})) {
+			return done( new errors.UnauthorizedError(
+				"Token expired. Please log back in."
+			), true);
+		} else {
+			return done(null, false)
+		}
 	};
 
 	function owner(req) {
@@ -263,7 +268,7 @@ module.exports = server => {
 	// delete user
 	server.del(
 		"/users/:id",
-		rjwt({ secret: config.JWT_SECRET }),
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
 			try {
 				if (owner(req)) {
@@ -288,11 +293,6 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
 			try {
-				if (await InvalidToken.findOne({ token })) {
-					throw new errors.UnauthorizedError(
-						"Token expired. Please log back in."
-					);
-				}
 				const bearer = req.header("Authorization");
 				const token = bearer.split(" ")[1];
 				const payload = jwt.decode(token);
@@ -302,7 +302,7 @@ module.exports = server => {
 				next();
 			} catch (err) {
 				return next(
-					new errors.ResourceNotFoundError("There is no user with given id")
+					new errors.ResourceNotFoundError(err)
 				);
 			}
 		}
@@ -332,11 +332,12 @@ module.exports = server => {
 
 	server.post(
 		"/logout",
-		rjwt({ secret: config.JWT_SECRET }),
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
 			try {
 				const token = req.header("Authorization").split(" ")[1];
-				const invalidToken = new InvalidToken({ token: token });
+				const { email, iat, exp } = jwt.decode(token);
+				const invalidToken = new InvalidToken({ email: email, iat: iat, exp: exp });
 				await invalidToken.save();
 				res.send(200);
 				next();
