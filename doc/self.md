@@ -9,7 +9,8 @@ Returns corresponding user given JWT token.
 **Header :**
 
 ```json
-    "Authorization": "Bearer [token]"
+"Content-type": "application/json"
+"Authorization": "Bearer [token]"
 ```
 
 ## Success Reponse
@@ -20,11 +21,11 @@ Returns corresponding user given JWT token.
 
 ```json
 {
-	"_id": "[User ID]",
-	"email": "[User email]",
-	"password": "[User password]",
-	"type": "[User type]",
-	"verified": true
+    "_id": "[User ID]",
+    "email": "[User email]",
+    "password": "[User password]",
+    "type": "[User type]",
+    "verified": true
 }
 ```
 
@@ -38,7 +39,7 @@ Returns corresponding user given JWT token.
 
 ```json
 {
-	"code": "InvalidCredentials",
-	"message": "caused by JsonWebTokenError: invalid signature"
+    "code": "InvalidCredentials",
+    "message": "caused by JsonWebTokenError: invalid signature"
 }
 ```

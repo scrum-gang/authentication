@@ -6,6 +6,10 @@ Return user with corresponding ID.
 
 **Method :** `GET`
 
+```json
+"Content-type": "application/json"
+```
+
 ## Success Reponse
 
 **Code :** `200 OK`
@@ -14,12 +18,12 @@ Return user with corresponding ID.
 
 ```json
 {
-	"_id": "5c6659554995bd0017faee8b",
-	"email": "realperson@gmail.com",
-	"password": "$2a$10$XIs/xj.K61ZPePyvT.Ha1eikd5W0eCHxXffQmAHKg9QiHFI4Uu/8m",
-	"type": "Applicant",
-	"verified": true,
-	"__v": 0
+    "_id": "5c6659554995bd0017faee8b",
+    "email": "realperson@gmail.com",
+    "password": "$2a$10$XIs/xj.K61ZPePyvT.Ha1eikd5W0eCHxXffQmAHKg9QiHFI4Uu/8m",
+    "type": "Applicant",
+    "verified": true,
+    "__v": 0
 }
 ```
 
@@ -33,7 +37,7 @@ Return user with corresponding ID.
 
 ```json
 {
-	"code": "ResourceNotFound",
-	"message": "There is no user with the id 5c6659554995bd0017faee8b"
+    "code": "ResourceNotFound",
+    "message": "There is no user with the id 5c6659554995bd0017faee8b"
 }
 ```

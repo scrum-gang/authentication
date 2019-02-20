@@ -9,16 +9,16 @@ Creates new user with given email, password and type.
 **Header :**
 
 ```json
-    "Content-Type": "application/json"
+"Content-Type": "application/json"
 ```
 
-**Input :**
+**Body :**
 
 ```json
 {
-	"email": "[valid email]",
-	"password": "[valid password]",
-	"type": "[Applicant || Recruiter]"
+    "email": "[valid email]",
+    "password": "[valid password]",
+    "type": "[Applicant || Recruiter]"
 }
 ```
 
@@ -30,6 +30,6 @@ Creates new user with given email, password and type.
 
 ```json
 {
-	"_id_": "[ID of new user]"
+    "_id_": "[ID of new user]"
 }
 ```

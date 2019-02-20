@@ -9,15 +9,15 @@ Returns session token for existing User on succesful login.
 **Header :**
 
 ```json
-    "Content-type": "application/json"
+"Content-type": "application/json"
 ```
 
-**Input :**
+**Body :**
 
 ```json
 {
-	"email": "[valid email]",
-	"password": "[valid password]"
+    "email": "[valid email]",
+    "password": "[valid password]"
 }
 ```
 
@@ -29,9 +29,9 @@ Returns session token for existing User on succesful login.
 
 ```json
 {
-	"iat": "[Token issued at]",
-	"exp": "[Token expiry]",
-	"token": "[JWT token]"
+    "iat": "[Token issued at]",
+    "exp": "[Token expiry]",
+    "token": "[JWT token]"
 }
 ```
 
@@ -45,8 +45,8 @@ Returns session token for existing User on succesful login.
 
 ```json
 {
-	"code": "Unauthorized",
-	"message": "Authentication failed."
+    "code": "Unauthorized",
+    "message": "Authentication failed."
 }
 ```
 
@@ -58,7 +58,7 @@ Returns session token for existing User on succesful login.
 
 ```json
 {
-	"code": "Unauthorized",
-	"message": "Unverified user."
+    "code": "Unauthorized",
+    "message": "Unverified user."
 }
 ```
