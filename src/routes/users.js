@@ -120,7 +120,7 @@ module.exports = server => {
 			parts[2];
 
 		var mailOptions = {
-			from: "JobHub Jake",
+			from: "Authboiis",
 			to: user.email,
 			subject: "JobHub Account Verification",
 			html:

@@ -9,16 +9,16 @@ Updates a user with the corresponding ID.
 **Header :**
 
 ```json
-    "Content-Type": "application/json"
+"Content-Type": "application/json"
 ```
 
 **Input :**
 
 ```json
 {
-	"email": "[new email]",
-	"password": "[new password]",
-	"type": "[new type]"
+    "email": "[new email]",
+    "password": "[new password]",
+    "type": "[new type]"
 }
 ```
 
