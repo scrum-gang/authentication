@@ -238,6 +238,14 @@ module.exports = server => {
 		});
 	});
 
+	var isRevokedCallback = function(req, payload, done) {
+		var iat = payload.iss;
+		var tokenId = payload.jti;
+
+		console.log(payload);
+		done(null, false);
+	};
+
 	function owner(req) {
 		const bearer = req.header("Authorization");
 		const token = bearer.split(" ")[1];
@@ -258,10 +266,6 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET }),
 		async (req, res, next) => {
 			try {
-				if (await InvalidToken.findOne({ token }))
-				{
-					throw new errors.UnauthorizedError("Token expired. Please log back in.")
-				}
 				if (owner(req)) {
 					const user = await User.findOneAndRemove({ _id: req.params.id });
 					res.send(204);
@@ -281,12 +285,13 @@ module.exports = server => {
 
 	server.get(
 		"/users/self",
-		rjwt({ secret: config.JWT_SECRET }),
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
 			try {
-				if (await InvalidToken.findOne({ token }))
-				{
-					throw new errors.UnauthorizedError("Token expired. Please log back in.")
+				if (await InvalidToken.findOne({ token })) {
+					throw new errors.UnauthorizedError(
+						"Token expired. Please log back in."
+					);
 				}
 				const bearer = req.header("Authorization");
 				const token = bearer.split(" ")[1];
@@ -325,15 +330,19 @@ module.exports = server => {
 		}
 	});
 
-	server.post("/logout", rjwt({ secret: config.JWT_SECRET }), async (req, res, next) => {
-		try {
-			const token = req.header("Authorization").split(" ")[1];
-			const invalidToken = new InvalidToken({token: token})
-			await invalidToken.save();
-			res.send(200);
-			next();
-		} catch (err){
-			return next(new errors.UnauthorizedError("Invalid token."));
+	server.post(
+		"/logout",
+		rjwt({ secret: config.JWT_SECRET }),
+		async (req, res, next) => {
+			try {
+				const token = req.header("Authorization").split(" ")[1];
+				const invalidToken = new InvalidToken({ token: token });
+				await invalidToken.save();
+				res.send(200);
+				next();
+			} catch (err) {
+				return next(new errors.UnauthorizedError("Invalid token."));
+			}
 		}
-	});
+	);
 };
