@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const rjwt = require("restify-jwt-community");
 const User = require("../models/User");
+const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
 const nodemailer = require("nodemailer");
@@ -257,6 +258,10 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET }),
 		async (req, res, next) => {
 			try {
+				if (await InvalidToken.findOne({ token }))
+				{
+					throw new errors.UnauthorizedError("Token expired. Please log back in.")
+				}
 				if (owner(req)) {
 					const user = await User.findOneAndRemove({ _id: req.params.id });
 					res.send(204);
@@ -279,6 +284,10 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET }),
 		async (req, res, next) => {
 			try {
+				if (await InvalidToken.findOne({ token }))
+				{
+					throw new errors.UnauthorizedError("Token expired. Please log back in.")
+				}
 				const bearer = req.header("Authorization");
 				const token = bearer.split(" ")[1];
 				const payload = jwt.decode(token);
@@ -302,7 +311,6 @@ module.exports = server => {
 				req.params.payload +
 				"." +
 				req.params.signature;
-			// console.log(jwt.decode(token));
 			const { email, iat, exp } = jwt.decode(token);
 
 			const user = await User.findOneAndUpdate(
@@ -313,6 +321,18 @@ module.exports = server => {
 			res.send({ iat, exp, token }, 200);
 			next();
 		} catch (err) {
+			return next(new errors.UnauthorizedError("Invalid token."));
+		}
+	});
+
+	server.post("/logout", rjwt({ secret: config.JWT_SECRET }), async (req, res, next) => {
+		try {
+			const token = req.header("Authorization").split(" ")[1];
+			const invalidToken = new InvalidToken({token: token})
+			await invalidToken.save();
+			res.send(200);
+			next();
+		} catch (err){
 			return next(new errors.UnauthorizedError("Invalid token."));
 		}
 	});
