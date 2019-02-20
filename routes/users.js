@@ -102,8 +102,8 @@ module.exports = server => {
 		var transporter = nodemailer.createTransport({
 			service: "gmail.com",
 			auth: {
-				user: "bogdan.dumitru127@gmail.com",
-				pass: "axsbbuevrsjvtcof"
+				user: "authboiis@gmail.com",
+				pass: "Boi1s42069"
 			}
 		});
 
@@ -166,7 +166,7 @@ module.exports = server => {
 				{ id: user.id, email: user.email, type: user.type },
 				config.JWT_SECRET,
 				{
-					expiresIn: "15m"
+					expiresIn: "30m"
 				}
 			);
 
@@ -242,12 +242,15 @@ module.exports = server => {
 		var iat = payload.iss;
 		var tokenId = payload.jti;
 
-		if (await InvalidToken.findOne({iat: payload.iat, email: payload.email})) {
-			return done( new errors.UnauthorizedError(
-				"Token expired. Please log back in."
-			), true);
+		if (
+			await InvalidToken.findOne({ iat: payload.iat, email: payload.email })
+		) {
+			return done(
+				new errors.UnauthorizedError("Token expired. Please log back in."),
+				true
+			);
 		} else {
-			return done(null, false)
+			return done(null, false);
 		}
 	};
 
@@ -301,9 +304,7 @@ module.exports = server => {
 				res.send(users);
 				next();
 			} catch (err) {
-				return next(
-					new errors.ResourceNotFoundError(err)
-				);
+				return next(new errors.ResourceNotFoundError(err));
 			}
 		}
 	);
@@ -337,7 +338,11 @@ module.exports = server => {
 			try {
 				const token = req.header("Authorization").split(" ")[1];
 				const { email, iat, exp } = jwt.decode(token);
-				const invalidToken = new InvalidToken({ email: email, iat: iat, exp: exp });
+				const invalidToken = new InvalidToken({
+					email: email,
+					iat: iat,
+					exp: exp
+				});
 				await invalidToken.save();
 				res.send(200);
 				next();
