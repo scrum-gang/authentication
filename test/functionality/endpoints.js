@@ -163,6 +163,7 @@ describe("Endpoints: functionality", function () {
 							.end(function (err, res) {
 								res.should.have.status(200);
 								res.should.be.json;
+								res.body.should.have.property("user");
 								res.body.should.have.property("iat");
 								res.body.should.have.property("exp");
 								res.body.should.have.property("token");
