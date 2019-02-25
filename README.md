@@ -1,5 +1,7 @@
 # Authentication - Jobhub
 
+[![Build Status](https://travis-ci.com/scrum-gang/authentication.svg?branch=master)](https://travis-ci.com/scrum-gang/authentication)
+
 ## Description
 
 Provides authentication/user management for all jobhub microservices. Uses JWT for authentication.
@@ -49,4 +51,6 @@ Please note that any new builds on the **development** branch will **wipe** the 
 - [Delete user by id](doc/deleteUser.md) : `DELETE /users/:id`
 - [Signup new user](doc/signup.md) : `POST /signup`
 - [Login existing user](doc/login.md) : `POST /login`
+- [Logout user](doc/logout.md) : `POST /logout`
 - [Get user from token](doc/self.md) : `GET /users/self`
+- [Resend verification email for unverified user](doc/resend.md) : `POST /resend`

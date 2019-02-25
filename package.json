@@ -4,21 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "test": "npm run lint && npm run mocha",
-    "lint": "eslint models/** routes/** test/** *.js",
-    "mocha": "NODE_ENV=test mocha --recursive --timeout 10000 --exit",
-    "staging": "NODE_ENV=staging mocha --recursive --timeout 10000 --exit"
+    "lint": "eslint src/** test/**",
+    "mocha": "cross-env NODE_ENV=test mocha --recursive --timeout 10000 --exit",
+    "staging": "cross-env NODE_ENV=staging mocha --recursive --timeout 10000 --exit"
   },
   "keywords": [],
   "author": "Seb Andrade",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "cross-env": "^5.2.0",
     "jsonwebtoken": "^8.3.0",
     "mongoose": "^5.3.7",
     "mongoose-timestamp": "^0.6.0",
+    "node-cron": "^2.0.3",
     "nodemailer": "^5.1.1",
     "restify": "^7.2.2",
     "restify-cors-middleware": "^1.1.1",

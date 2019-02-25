@@ -2,9 +2,10 @@ const chai = require("chai");
 const chaiHttp = require("chai-http");
 const should = chai.should();
 
-const User = require("../../models/User");
+const User = require("../../src/models/User");
+const InvalidToken = require("../../src/models/InvalidToken");
 
-const server = require("../../index");
+const server = require("../../src/index");
 
 const newUser = {
 	"email": "realperson@realemail.com",
@@ -17,7 +18,9 @@ chai.use(chaiHttp);
 describe("Endpoints: functionality", function () {
 	beforeEach(function (done) {
 		User.deleteMany({}, function (err) {
-			done();
+			InvalidToken.deleteMany({}, function (err) {
+				done();
+			});
 		});
 	});
 
@@ -54,6 +57,21 @@ describe("Endpoints: functionality", function () {
 						res.body[0]._id.should.equal(userId);
 						res.body[0].email.should.equal(newUser.email);
 						res.body[0].type.should.equal(newUser.type);
+						done();
+					});
+			});
+	});
+
+	it("should NOT add a user if there is another with the same email on /signup POST", function (done) {
+		chai.request(server)
+			.post("/signup")
+			.send(newUser)
+			.end(function (err, res) {
+				chai.request(server)
+					.post("/signup")
+					.send(newUser)
+					.end(function (err, res) {
+						res.should.have.status(400);
 						done();
 					});
 			});
@@ -145,10 +163,48 @@ describe("Endpoints: functionality", function () {
 							.end(function (err, res) {
 								res.should.have.status(200);
 								res.should.be.json;
+								res.body.should.have.property("user");
 								res.body.should.have.property("iat");
 								res.body.should.have.property("exp");
 								res.body.should.have.property("token");
 								done();
+							});
+					});
+			});
+	});
+
+	// Test /logout POST
+	it("should logout a previously logged in user on /logout POST", function (done) {
+		// Add new user
+		chai.request(server)
+			.post("/signup")
+			.send(newUser)
+			.end(function (err, res) {
+				User.findOneAndUpdate(
+					{ email: newUser.email },
+					{ verified: true }
+					, function (err, doc, res) {
+						// Login user
+						chai.request(server)
+							.post("/login")
+							.send({ "email": newUser.email, "password": newUser.password })
+							.end(function (err, res) {
+								const { iat, exp, token } = res.body;
+								chai.request(server)
+									.post("/logout")
+									.set("Authorization", "Bearer " + token)
+									.end(function (err, res) {
+										res.should.have.status(200);
+										
+										// Check token expired
+										chai.request(server)
+											.get("/users/self")
+											.set("Authorization", "Bearer " + token)
+											.end(function (err, res) {
+												res.should.have.status(401);
+												done();
+											});
+									});
 							});
 					});
 			});
@@ -177,7 +233,6 @@ describe("Endpoints: functionality", function () {
 								chai.request(server)
 									.del("/users/" + userId)
 									.set("Authorization", "Bearer " + token)
-									.send()
 									.end(function (err, res) {
 										res.should.have.status(204);
 
@@ -216,7 +271,6 @@ describe("Endpoints: functionality", function () {
 								chai.request(server)
 									.get("/users/self")
 									.set("Authorization", "Bearer " + token)
-									.send()
 									.end(function (err, res) {
 										res.should.have.status(200);
 										res.body._id.should.equal(userId);
@@ -227,10 +281,61 @@ describe("Endpoints: functionality", function () {
 			});
 	});
 
+	// Test /resend POST
+	it("should resend an email if the user is unverified on /resend POST", function (done) {
+		// Add user
+		chai.request(server)
+			.post("/signup")
+			.send(newUser)
+			.end(function (err, res) {
+				chai.request(server)
+					.post("/resend")
+					.send({"email": newUser.email})
+					.end(function (err, res) {
+						res.should.have.status(200);
+						done();
+					});
+			});
+	});
+
+	it("should NOT resend an email if the user is already verified on /resend POST", function (done) {
+		// Add user
+		chai.request(server)
+			.post("/signup")
+			.send(newUser)
+			.end(function (err, res) {
+				const userId = res.body._id;
+
+				User.findOneAndUpdate(
+					{ email: newUser.email },
+					{ verified: true }
+					, function (err, doc, res) {
+						chai.request(server)
+							.post("/resend")
+							.send({"email": newUser.email})
+							.end(function (err, res) {
+								res.should.have.status(400);
+								done();
+							});
+					});
+			});
+	});
+
+	it("should NOT resend an email of the user doesn't exist on /resend POST", function (done) {
+		chai.request(server)
+			.post("/resend")
+			.send({"email": "fakeemail@gmail.com"})
+			.end(function (err, res) {
+				res.should.have.status(400);
+				done();
+			});
+	});
+
 	after(function (done) {
 		User.deleteMany({}, function (err) {
-			server.stop();
-			done();
+			InvalidToken.deleteMany({}, function (err) {
+				done();
+			});
 		});
 	});
 });

@@ -6,10 +6,13 @@ const corsMiddleware = require("restify-cors-middleware");
 
 const server = restify.createServer();
 
-const isTestEnv = process.env.NODE_ENV == "test";
+const isTestEnv = (config.ENV == "test" || config.ENV == "development");
 
 const mongoMem = isTestEnv ? require("mongodb-memory-server") : null;
 const mongoServer = isTestEnv ? new mongoMem.MongoMemoryServer() : null;
+
+var cron = require("node-cron");
+const InvalidToken = require("./models/InvalidToken");
 
 // server.use(rjwt({ secret: config.JWT_SECRET }).unless({ path: ["/auth"] }));
 server.use(restify.plugins.bodyParser());
@@ -42,7 +45,7 @@ if (isTestEnv) {
 	server.listen(config.PORT, () => {
 		mongoose.set("useFindAndModify", false);
 		mongoose.connect(
-			process.env.NODE_ENV == "staging"
+			config.ENV == "staging"
 				? config.MONGODB_URI_STAGING
 				: config.MONGODB_URI,
 			{ useNewUrlParser: true }
@@ -65,6 +68,22 @@ function stop() {
 	}
 	server.close();
 }
+
+cron.schedule("*/1 * * * *", async () => {
+	const tkns = await InvalidToken.find({});
+	const current_time = new Date().getTime() / 1000;
+
+	tkns.forEach(function(tkn, index) {
+		if (current_time > tkn.exp) {
+			/* expired */
+			InvalidToken.deleteOne({}, err => {
+				if (err !== null) {
+					console.log(err);
+				}
+			});
+		}
+	});
+});
 
 module.exports = server;
 module.exports.stop = stop;

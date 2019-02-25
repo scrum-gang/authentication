@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const rjwt = require("restify-jwt-community");
 const User = require("../models/User");
+const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
 const nodemailer = require("nodemailer");
@@ -83,7 +84,6 @@ module.exports = server => {
 					const newUser = await user.save();
 					const host = req.header("Host");
 					sendEmail(host, user);
-					// console.log(newUser)
 					res.send(201, { _id: newUser.id });
 					next();
 				} catch (err) {
@@ -101,8 +101,8 @@ module.exports = server => {
 		var transporter = nodemailer.createTransport({
 			service: "gmail.com",
 			auth: {
-				user: "bogdan.dumitru127@gmail.com",
-				pass: "axsbbuevrsjvtcof"
+				user: "authboiis@gmail.com",
+				pass: "Boi1s42069"
 			}
 		});
 
@@ -119,7 +119,7 @@ module.exports = server => {
 			parts[2];
 
 		var mailOptions = {
-			from: "JobHub Jake",
+			from: "Authboiis",
 			to: user.email,
 			subject: "JobHub Account Verification",
 			html:
@@ -160,17 +160,17 @@ module.exports = server => {
 
 		try {
 			const user = await auth.authenticate(email, password);
-			// console.log(user);
 			const token = jwt.sign(
 				{ id: user.id, email: user.email, type: user.type },
 				config.JWT_SECRET,
 				{
-					expiresIn: "15m"
+					expiresIn: "30m"
 				}
 			);
 
 			const { iat, exp } = jwt.decode(token);
-			res.send({ iat, exp, token });
+			const payload = Object.assign({}, { user }, { iat, exp, token });
+			res.send(payload);
 
 			next();
 		} catch (err) {
@@ -237,16 +237,32 @@ module.exports = server => {
 		});
 	});
 
+	var isRevokedCallback = async function(req, payload, done) {
+		var iat = payload.iss;
+		var tokenId = payload.jti;
+
+		if (
+			await InvalidToken.findOne({ iat: payload.iat, email: payload.email })
+		) {
+			return done(
+				new errors.UnauthorizedError("Token expired. Please log back in."),
+				true
+			);
+		} else {
+			return done(null, false);
+		}
+	};
+
 	function owner(req) {
 		const bearer = req.header("Authorization");
 		const token = bearer.split(" ")[1];
 		const payload = jwt.decode(token);
 
 		if (payload.id == req.params.id) {
-			console.log("Its you!");
+			config.ENV == "development" && console.log("Its you!");
 			return true;
 		} else {
-			console.log("Its not you!");
+			config.ENV == "development" && console.log("Its not you!");
 			return false;
 		}
 	}
@@ -254,7 +270,7 @@ module.exports = server => {
 	// delete user
 	server.del(
 		"/users/:id",
-		rjwt({ secret: config.JWT_SECRET }),
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
 			try {
 				if (owner(req)) {
@@ -276,20 +292,18 @@ module.exports = server => {
 
 	server.get(
 		"/users/self",
-		rjwt({ secret: config.JWT_SECRET }),
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
 			try {
 				const bearer = req.header("Authorization");
 				const token = bearer.split(" ")[1];
 				const payload = jwt.decode(token);
 
-				const users = await User.findById(payload.id);
-				res.send(users);
+				const user = await User.findById(payload.id);
+				res.send(user);
 				next();
 			} catch (err) {
-				return next(
-					new errors.ResourceNotFoundError("There is no user with given id")
-				);
+				return next(new errors.ResourceNotFoundError(err));
 			}
 		}
 	);
@@ -302,7 +316,6 @@ module.exports = server => {
 				req.params.payload +
 				"." +
 				req.params.signature;
-			// console.log(jwt.decode(token));
 			const { email, iat, exp } = jwt.decode(token);
 
 			const user = await User.findOneAndUpdate(
@@ -316,4 +329,25 @@ module.exports = server => {
 			return next(new errors.UnauthorizedError("Invalid token."));
 		}
 	});
+
+	server.post(
+		"/logout",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async (req, res, next) => {
+			try {
+				const token = req.header("Authorization").split(" ")[1];
+				const { email, iat, exp } = jwt.decode(token);
+				const invalidToken = new InvalidToken({
+					email: email,
+					iat: iat,
+					exp: exp
+				});
+				await invalidToken.save();
+				res.send(200);
+				next();
+			} catch (err) {
+				return next(new errors.UnauthorizedError("Invalid token."));
+			}
+		}
+	);
 };
