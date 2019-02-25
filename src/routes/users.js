@@ -84,7 +84,6 @@ module.exports = server => {
 					const newUser = await user.save();
 					const host = req.header("Host");
 					sendEmail(host, user);
-					// console.log(newUser)
 					res.send(201, { _id: newUser.id });
 					next();
 				} catch (err) {
@@ -161,7 +160,6 @@ module.exports = server => {
 
 		try {
 			const user = await auth.authenticate(email, password);
-			// console.log(user);
 			const token = jwt.sign(
 				{ id: user.id, email: user.email, type: user.type },
 				config.JWT_SECRET,
@@ -171,7 +169,8 @@ module.exports = server => {
 			);
 
 			const { iat, exp } = jwt.decode(token);
-			res.send({ iat, exp, token });
+			const payload = Object.assign({}, { user }, { iat, exp, token });
+			res.send(payload);
 
 			next();
 		} catch (err) {
@@ -260,10 +259,10 @@ module.exports = server => {
 		const payload = jwt.decode(token);
 
 		if (payload.id == req.params.id) {
-			console.log("Its you!");
+			config.ENV == "development" && console.log("Its you!");
 			return true;
 		} else {
-			console.log("Its not you!");
+			config.ENV == "development" && console.log("Its not you!");
 			return false;
 		}
 	}
@@ -300,8 +299,8 @@ module.exports = server => {
 				const token = bearer.split(" ")[1];
 				const payload = jwt.decode(token);
 
-				const users = await User.findById(payload.id);
-				res.send(users);
+				const user = await User.findById(payload.id);
+				res.send(user);
 				next();
 			} catch (err) {
 				return next(new errors.ResourceNotFoundError(err));
