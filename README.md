@@ -1,6 +1,7 @@
 # Authentication - Jobhub
 
 [![Build Status](https://travis-ci.com/scrum-gang/authentication.svg?branch=master)](https://travis-ci.com/scrum-gang/authentication)
+[![Coverage Status](https://coveralls.io/repos/github/scrum-gang/authentication/badge.svg?branch=master)](https://coveralls.io/github/scrum-gang/authentication?branch=master)
 
 ## Description
 

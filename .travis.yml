@@ -7,9 +7,10 @@ cache:
 script:
   - npm test
   - npm run staging
+after_success: npm run coverage
 deploy:
   provider: heroku
-  app: 
+  app:
     master: jobhub-authentication
     development: jobhub-authentication-staging
   api_key:
