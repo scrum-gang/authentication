@@ -8,8 +8,9 @@
     "dev": "nodemon src/index.js",
     "test": "npm run lint && npm run mocha",
     "lint": "eslint src/** test/**",
-    "mocha": "cross-env NODE_ENV=test mocha --recursive --timeout 10000 --exit",
-    "staging": "cross-env NODE_ENV=staging mocha --recursive --timeout 10000 --exit"
+    "mocha": "cross-env NODE_ENV=test nyc --reporter=html --reporter=text mocha --recursive --timeout 10000 --exit",
+    "staging": "cross-env NODE_ENV=staging mocha --recursive --timeout 10000 --exit",
+    "coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "keywords": [],
   "author": "Seb Andrade",
@@ -30,9 +31,11 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-http": "^4.2.1",
+    "coveralls": "^3.0.3",
     "eslint": "^5.13.0",
     "mocha": "^5.2.0",
     "mongodb-memory-server": "^3.0.0",
-    "nodemon": "^1.18.5"
+    "nodemon": "^1.18.5",
+    "nyc": "^13.3.0"
   }
 }
