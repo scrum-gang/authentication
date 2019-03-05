@@ -8,12 +8,12 @@
     "dev": "nodemon src/index.js",
     "test": "npm run lint && npm run mocha",
     "lint": "eslint src/** test/**",
-    "mocha": "cross-env NODE_ENV=test nyc --reporter=html --reporter=text mocha --recursive --timeout 10000 --exit",
+    "mocha": "cross-env NODE_ENV=test nyc --reporter=text mocha --recursive --timeout 10000 --exit",
     "staging": "cross-env NODE_ENV=staging mocha --recursive --timeout 10000 --exit",
     "coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "keywords": [],
-  "author": "Seb Andrade",
+  "author": "Seb Andrade, Alexander Harris, Bogdan Dimitru, David Ritch, Laurent Chenet",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
