@@ -1,8 +1,8 @@
-# Delete user by id
+# Delete user by token
 
-Deletes a user with the corresponding ID.
+Deletes a user with the corresponding token.
 
-**URL :** `/users/:id`
+**URL :** `/users/self`
 
 **Method :** `DELETE`
 
@@ -10,7 +10,7 @@ Deletes a user with the corresponding ID.
 
 ```json
 "Content-type": "application/json"
-"Authorization": "Bearer [valid Moderator token]"
+"Authorization": "Bearer [valid token]"
 ```
 
 ## Success Reponse
