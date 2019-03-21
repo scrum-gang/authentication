@@ -6,7 +6,7 @@ const User = require("../models/User");
 const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
-const mailgun = require("mailgun-js")({apiKey: config.MAILGUN_API_KEY, domain: config.MAILGUN_DOMAIN});
+const mailgun = (config.ENV != "test" && config.ENV != "staging") ? require("mailgun-js")({apiKey: config.MAILGUN_API_KEY, domain: config.MAILGUN_DOMAIN}) : null;
 
 module.exports = server => {
 
