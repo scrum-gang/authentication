@@ -141,32 +141,34 @@ module.exports = server => {
 			expiresIn: "15m"
 		});
 
-		sgMail.setApiKey(config.SENDGRID_API_KEY);
+		if (config.ENV != "test" && config.ENV != "staging") {
+			sgMail.setApiKey(config.SENDGRID_API_KEY);
 
-		const parts = token.split(".");
+			const parts = token.split(".");
 
-		const link =
-			"http://" +
-			host +
-			"/verify/" +
-			parts[0] +
-			"/" +
-			parts[1] +
-			"/" +
-			parts[2];
+			const link =
+				"http://" +
+				host +
+				"/verify/" +
+				parts[0] +
+				"/" +
+				parts[1] +
+				"/" +
+				parts[2];
 
-		var mailOptions = {
-			to: user.email,
-			from: "authentication@jobhub.com",
-			subject: "JobHub Account Verification",
-			html:
-				"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
-				link +
-				">Click here to verify</a>" +
-				"<br> Thanks for using JobHub!"
-		};
+			var mailOptions = {
+				to: user.email,
+				from: "authentication@jobhub.com",
+				subject: "JobHub Account Verification",
+				html:
+					"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
+					link +
+					">Click here to verify</a>" +
+					"<br> Thanks for using JobHub!"
+			};
 
-		sgMail.send(mailOptions);
+			sgMail.send(mailOptions);
+		}
 	}
 
 	server.post(
