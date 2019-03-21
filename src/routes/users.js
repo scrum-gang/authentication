@@ -158,7 +158,7 @@ module.exports = server => {
 
 			var mailOptions = {
 				to: user.email,
-				from: "authentication@jobhub.com",
+				from: "jobhub-authentication@scrumgang.com",
 				subject: "JobHub Account Verification",
 				html:
 					"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
