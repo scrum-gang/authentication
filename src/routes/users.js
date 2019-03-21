@@ -9,10 +9,43 @@ const config = require("../config");
 const nodemailer = require("nodemailer");
 
 module.exports = server => {
-	// register User
+	
 	function validateEmail(email) {
 		var re = /\S+@\S+\.\S+/;
 		return re.test(email);
+	}
+
+	var isRevokedCallback = async function (req, payload, done) {
+		if (payload == null) {
+			return done(new errors.UnauthorizedError("Invalid token"), false);
+		}
+		var iat = payload.iss;
+		var tokenId = payload.jti;
+
+		if (
+			await InvalidToken.findOne({ iat: payload.iat, email: payload.email })
+		) {
+			return done(
+				new errors.UnauthorizedError("Token expired. Please log back in."),
+				true
+			);
+		} else {
+			return done(null, false);
+		}
+	};
+
+	function moderator(req) {
+		const bearer = req.header("Authorization");
+		const token = bearer.split(" ")[1];
+		const payload = jwt.decode(token);
+
+		if (payload.type.toLowerCase() == "moderator" || req.header("secret") == config.MOD_SECRET) {
+			config.ENV == "development" && console.log("You're a mod!");
+			return true;
+		} else {
+			config.ENV == "development" && console.log("Not a mod you hackerman");
+			return false;
+		}
 	}
 
 	server.post("/signup", async (req, res, next) => {
@@ -138,134 +171,147 @@ module.exports = server => {
 		});
 	}
 
-	server.post("/resend", async (req, res, next) => {
-		const { email } = req.body;
-		const user = await User.findOne({ email });
+	server.post(
+		"/resend", 
+		async (req, res, next) => {
+			const { email } = req.body;
+			const user = await User.findOne({ email });
 
-		if (user === null) {
-			return next(new errors.BadRequestError("No user with given email"));
-		} else {
-			if (user.verified) {
-				return next(new errors.BadRequestError("User is already verified."));
+			if (user === null) {
+				return next(new errors.BadRequestError("No user with given email"));
+			} else {
+				if (user.verified) {
+					return next(new errors.BadRequestError("User is already verified."));
+				}
+				const host = req.header("Host");
+				sendEmail(host, user);
+				res.send(200);
 			}
-			const host = req.header("Host");
-			sendEmail(host, user);
-			res.send(200);
 		}
-	});
+	);
 
 	// auth user
-	server.post("/login", async (req, res, next) => {
-		const { email, password } = req.body;
+	server.post(
+		"/login", 
+		async (req, res, next) => {
+			const { email, password } = req.body;
 
-		try {
-			const user = await auth.authenticate(email, password);
-			const token = jwt.sign(
-				{ id: user.id, email: user.email, type: user.type },
-				config.JWT_SECRET,
-				{
-					expiresIn: "30m"
+			try {
+				const user = await auth.authenticate(email, password);
+				const token = jwt.sign(
+					{ id: user.id, email: user.email, type: user.type },
+					config.JWT_SECRET,
+					{
+						expiresIn: "15m"
+					}
+				);
+
+				const { iat, exp } = jwt.decode(token);
+				const payload = Object.assign({}, { user }, { iat, exp, token });
+				res.send(payload);
+
+				next();
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+		}
+	);
+
+	server.get(
+		"/users",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async (req, res, next) => {
+			try {
+				if (moderator(req)) {
+					const users = await User.find({});
+					res.send(users);
+					next();
+				} else {
+					return next(new errors.UnauthorizedError("Only moderators may see other users"));
 				}
-			);
+			} catch (err) {
+				return next(new errors.InvalidContentError(err));
+			}
+		});
 
-			const { iat, exp } = jwt.decode(token);
-			const payload = Object.assign({}, { user }, { iat, exp, token });
-			res.send(payload);
-
-			next();
-		} catch (err) {
-			return next(new errors.UnauthorizedError(err));
-		}
-	});
-
-	server.get("/users", async (req, res, next) => {
-		try {
-			const users = await User.find({});
-			res.send(users);
-			next();
-		} catch (err) {
-			return next(new errors.InvalidContentError(err));
-		}
-	});
-
-	server.get("/users/:id", async (req, res, next) => {
-		try {
-			const users = await User.findById(req.params.id);
-			res.send(users);
-			next();
-		} catch (err) {
-			return next(
-				new errors.ResourceNotFoundError(
-					`There is no user with the id ${req.params.id}`
-				)
-			);
-		}
-	});
+	server.get(
+		"/users/:id",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async (req, res, next) => {
+			try {
+				if (moderator(req)) {
+					const users = await User.findById(req.params.id);
+					if (users == null) {
+						return next(new errors.ResourceNotFoundError(`There is no user with the id ${req.params.id}`));
+					}
+					res.send(users);
+					next();
+				} else {
+					return next(new errors.UnauthorizedError("Only moderators may see other users"));
+				}
+			} catch (err) {
+				return next(
+					new errors.ResourceNotFoundError(
+						`There is no user with the id ${req.params.id}`
+					)
+				);
+			}
+		});
 
 	// update user
-	server.put("/users/:id", async (req, res, next) => {
-		if (!req.is("application/json")) {
-			return next(new errors.InvalidContentError("Expects 'application/json"));
-		}
+	server.put(
+		"/users/:id", 
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }), 
+		async (req, res, next) => {
+			if (!req.is("application/json")) {
+				return next(new errors.InvalidContentError("Expects 'application/json"));
+			}
+			if (!moderator(req)) {
+				return next(new errors.UnauthorizedError("Only moderators may update other users"));
+			}
+			if (typeof req.body.verified !== "undefined") {
+				return next(
+					new errors.UnauthorizedError("Cannot modify verified field.")
+				);
+			}
+			const lctype = req.body.type.toLowerCase();
+			if (
+				lctype.localeCompare("applicant") != 0 &&
+				lctype.localeCompare("recruiter") != 0 &&
+				lctype.localeCompare("moderator") != 0
+			) {
+				return next(
+					new errors.InvalidCredentialsError(
+						"Type must be Applicant, Recruiter or Moderator."
+					)
+				);
+			}
 
-		if (typeof req.body.verified !== "undefined") {
-			return next(
-				new errors.UnauthorizedError("Cannot modify verified field.")
-			);
-		}
-
-		const updatedUser = req.body;
-		bcrypt.genSalt(10, (err, salt) => {
-			bcrypt.hash(updatedUser.password, salt, async (err, hash) => {
-				updatedUser.password = hash;
-				try {
-					const user = await User.findOneAndUpdate(
-						{ _id: req.params.id },
-						updatedUser
-					);
-
-					res.send(200);
-					next();
-				} catch (err) {
-					return next(
-						new errors.ResourceNotFoundError(
-							`There is no user with the id ${req.params.id}`
-						)
-					);
-				}
+			const updatedUser = req.body;
+			bcrypt.genSalt(10, (err, salt) => {
+				bcrypt.hash(updatedUser.password, salt, async (err, hash) => {
+					updatedUser.password = hash;
+					try {
+						const user = await User.findOneAndUpdate(
+							{ _id: req.params.id },
+							updatedUser
+						);
+						
+						if (user == null) {
+							return next(new errors.ResourceNotFoundError(`There is no user with the id ${req.params.id}`));
+						}
+						res.send(200);
+						next();
+					} catch (err) {
+						return next(
+							new errors.ResourceNotFoundError(
+								`There is no user with the id ${req.params.id}`
+							)
+						);
+					}
+				});
 			});
 		});
-	});
-
-	var isRevokedCallback = async function(req, payload, done) {
-		var iat = payload.iss;
-		var tokenId = payload.jti;
-
-		if (
-			await InvalidToken.findOne({ iat: payload.iat, email: payload.email })
-		) {
-			return done(
-				new errors.UnauthorizedError("Token expired. Please log back in."),
-				true
-			);
-		} else {
-			return done(null, false);
-		}
-	};
-
-	function owner(req) {
-		const bearer = req.header("Authorization");
-		const token = bearer.split(" ")[1];
-		const payload = jwt.decode(token);
-
-		if (payload.id == req.params.id) {
-			config.ENV == "development" && console.log("Its you!");
-			return true;
-		} else {
-			config.ENV == "development" && console.log("Its not you!");
-			return false;
-		}
-	}
 
 	// delete user
 	server.del(
@@ -273,12 +319,15 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
 			try {
-				if (owner(req)) {
+				if (moderator(req)) {
 					const user = await User.findOneAndRemove({ _id: req.params.id });
+					if (user == null) {
+						return next(new errors.ResourceNotFoundError(`There is no user with the id ${req.params.id}`));
+					}
 					res.send(204);
 					next();
 				} else {
-					return next(new errors.ResourceNotFoundError("Thats not you, silly"));
+					return next(new errors.UnauthorizedError("Only moderators may delete other users"));
 				}
 			} catch (err) {
 				return next(
@@ -300,6 +349,9 @@ module.exports = server => {
 				const payload = jwt.decode(token);
 
 				const user = await User.findById(payload.id);
+				if (user == null) {
+					return next(new errors.ResourceNotFoundError("User does not exist"));
+				}
 				res.send(user);
 				next();
 			} catch (err) {
@@ -308,27 +360,98 @@ module.exports = server => {
 		}
 	);
 
-	server.get("/verify/:header/:payload/:signature", async (req, res, next) => {
-		try {
-			const token =
-				req.params.header +
-				"." +
-				req.params.payload +
-				"." +
-				req.params.signature;
-			const { email, iat, exp } = jwt.decode(token);
+	server.put(
+		"/users/self",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async (req, res, next) => {
+			if (!req.is("application/json")) {
+				return next(new errors.InvalidContentError("Expects 'application/json"));
+			}
+			if (typeof req.body.verified !== "undefined") {
+				return next(
+					new errors.UnauthorizedError("Cannot modify verified field.")
+				);
+			}
+			const lctype = req.body.type.toLowerCase();
+			if (
+				lctype.localeCompare("applicant") != 0 &&
+				lctype.localeCompare("recruiter") != 0
+			) {
+				return next(
+					new errors.InvalidCredentialsError(
+						"Type must be Applicant or Recruiter."
+					)
+				);
+			}
+			const bearer = req.header("Authorization");
+			const token = bearer.split(" ")[1];
+			const payload = jwt.decode(token);
 
-			const user = await User.findOneAndUpdate(
-				{ email: email },
-				{ verified: true }
-			);
-
-			res.send({ iat, exp, token }, 200);
-			next();
-		} catch (err) {
-			return next(new errors.UnauthorizedError("Invalid token."));
+			const updatedUser = req.body;
+			bcrypt.genSalt(10, (err, salt) => {
+				bcrypt.hash(updatedUser.password, salt, async (err, hash) => {
+					updatedUser.password = hash;
+					try {
+						const user = await User.findOneAndUpdate(
+							{ _id: payload.id },
+							updatedUser
+						);
+						
+						if (user == null) {
+							return next(new errors.ResourceNotFoundError(`There is no user with the id ${payload.id}`));
+						}
+						res.send(200);
+						next();
+					} catch (err) {
+						return next(
+							new errors.ResourceNotFoundError(
+								`There is no user with the id ${payload.id}`
+							)
+						);
+					}
+				});
+			});
 		}
-	});
+	);
+	
+	server.del(
+		"/users/self", 
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async(req, res, next) => {
+			const bearer = req.header("Authorization");
+			const token = bearer.split(" ")[1];
+			const payload = jwt.decode(token);
+
+			await User.findOneAndRemove({ _id: payload.id });
+			res.send(204);
+			next();
+		}
+	);
+
+	server.get(
+		"/verify/:header/:payload/:signature", 
+		async (req, res, next) => {
+			try {
+				const token =
+					req.params.header +
+					"." +
+					req.params.payload +
+					"." +
+					req.params.signature;
+				const { email, iat, exp } = jwt.decode(token);
+
+				await User.findOneAndUpdate(
+					{ email: email },
+					{ verified: true }
+				);
+
+				res.send({ iat, exp, token }, 200);
+				next();
+			} catch (err) {
+				return next(new errors.UnauthorizedError("Invalid token."));
+			}
+		}
+	);
 
 	server.post(
 		"/logout",

@@ -7,19 +7,43 @@ const InvalidToken = require("../../src/models/InvalidToken");
 
 const server = require("../../src/index");
 
+chai.use(chaiHttp);
+
 const newUser = {
 	"email": "realperson@realemail.com",
 	"password": "abc123",
 	"type": "Applicant"
 };
 
-chai.use(chaiHttp);
+const godMode = {
+	"email": "god@realemail.com",
+	"password": "cdb234",
+	"type": "Applicant"
+};
+
+var godToken = null;
 
 describe("Endpoints: functionality", function () {
 	beforeEach(function (done) {
 		User.deleteMany({}, function (err) {
 			InvalidToken.deleteMany({}, function (err) {
-				done();
+				chai.request(server)
+					.post("/signup")
+					.send(godMode)
+					.end(function (err, res) {
+						User.findOneAndUpdate(
+							{ email: godMode.email },
+							{ verified: true, type: "Moderator" }
+							, function (err, doc, res) {
+								chai.request(server)
+									.post("/login")
+									.send({ "email": godMode.email, "password": godMode.password })
+									.end(function (err, res) {
+										godToken = res.body.token;
+										done();
+									});
+							});
+					});
 			});
 		});
 	});
@@ -28,11 +52,12 @@ describe("Endpoints: functionality", function () {
 	it("should get all users on /users GET", function (done) {
 		chai.request(server)
 			.get("/users")
+			.set("Authorization", "Bearer " + godToken)
 			.end(function (err, res) {
 				res.should.have.status(200);
 				res.should.be.json;
 				res.body.should.be.a("array");
-				res.body.length.should.be.equal(0);
+				res.body.length.should.be.equal(1);
 				done();
 			});
 	});
@@ -50,13 +75,16 @@ describe("Endpoints: functionality", function () {
 
 				const userId = res.body._id;
 
-				// Get all users and verify new one is present
+				// Get user
 				chai.request(server)
-					.get("/users")
+					.get("/users/" + userId)
+					.set("Authorization", "Bearer " + godToken)
 					.end(function (err, res) {
-						res.body[0]._id.should.equal(userId);
-						res.body[0].email.should.equal(newUser.email);
-						res.body[0].type.should.equal(newUser.type);
+						res.body.should.have.property("created_at");
+						res.body.should.have.property("updated_at");
+						res.body._id.should.equal(userId);
+						res.body.email.should.equal(newUser.email);
+						res.body.type.should.equal(newUser.type);
 						done();
 					});
 			});
@@ -89,10 +117,13 @@ describe("Endpoints: functionality", function () {
 				// Get new user using ID
 				chai.request(server)
 					.get("/users/" + userId)
+					.set("Authorization", "Bearer " + godToken)
 					.end(function (err, res) {
 						res.should.have.status(200);
 						res.should.be.json;
 						res.body.should.have.property("password");
+						res.body.should.have.property("created_at");
+						res.body.should.have.property("updated_at");
 						res.body._id.should.equal(userId);
 						res.body.email.should.equal(newUser.email);
 						res.body.type.should.equal(newUser.type);
@@ -114,8 +145,10 @@ describe("Endpoints: functionality", function () {
 				// Get current password
 				chai.request(server)
 					.get("/users/" + userId)
+					.set("Authorization", "Bearer " + godToken)
 					.end(function (err, res) {
 						const oldPassword = res.body.password;
+						const oldTimestamp = res.body.updated_at;
 						const updateUser = {
 							"email": "realperson2@realemail.com",
 							"password": "def456",
@@ -126,17 +159,20 @@ describe("Endpoints: functionality", function () {
 						chai.request(server)
 							.put("/users/" + userId)
 							.send(updateUser)
+							.set("Authorization", "Bearer " + godToken)
 							.end(function (err, res) {
 								res.should.have.status(200);
 
 								// Verify user was updated
 								chai.request(server)
 									.get("/users/" + userId)
+									.set("Authorization", "Bearer " + godToken)
 									.end(function (err, res) {
 										res.body._id.should.equal(userId);
 										res.body.email.should.equal(updateUser.email);
 										res.body.type.should.equal(updateUser.type);
 										res.body.password.should.not.equal(oldPassword);
+										res.body.updated_at.should.not.equal(oldTimestamp);
 										res.body.verified.should.equal(false);
 										done();
 									});
@@ -195,7 +231,7 @@ describe("Endpoints: functionality", function () {
 									.set("Authorization", "Bearer " + token)
 									.end(function (err, res) {
 										res.should.have.status(200);
-										
+
 										// Check token expired
 										chai.request(server)
 											.get("/users/self")
@@ -223,25 +259,19 @@ describe("Endpoints: functionality", function () {
 					{ email: newUser.email },
 					{ verified: true }
 					, function (err, doc, res) {
-						// Login user
+						// Delete user
 						chai.request(server)
-							.post("/login")
-							.send({ "email": newUser.email, "password": newUser.password })
+							.del("/users/" + userId)
+							.set("Authorization", "Bearer " + godToken)
 							.end(function (err, res) {
-								const { iat, exp, token } = res.body;
-								// Delete user
-								chai.request(server)
-									.del("/users/" + userId)
-									.set("Authorization", "Bearer " + token)
-									.end(function (err, res) {
-										res.should.have.status(204);
+								res.should.have.status(204);
 
-										chai.request(server)
-											.get("/users/" + userId)
-											.end(function (err, res) {
-												should.not.exist(res.body);
-												done();
-											});
+								chai.request(server)
+									.get("/users/" + userId)
+									.set("Authorization", "Bearer " + godToken)
+									.end(function (err, res) {
+										res.should.have.status(404);
+										done();
 									});
 							});
 					});
@@ -275,6 +305,95 @@ describe("Endpoints: functionality", function () {
 										res.should.have.status(200);
 										res.body._id.should.equal(userId);
 										done();
+									});
+							});
+					});
+			});
+	});
+
+	// Test /users/self PUT
+	it("should update the user associated with the token on /users/self PUT", function (done) {
+		// Add user
+		chai.request(server)
+			.post("/signup")
+			.send(newUser)
+			.end(function (err, res) {
+				const userId = res.body._id;
+
+				User.findOneAndUpdate(
+					{ email: newUser.email },
+					{ verified: true }
+					, function (err, doc, res) {
+						// Login user
+						chai.request(server)
+							.post("/login")
+							.send({ "email": newUser.email, "password": newUser.password })
+							.end(function (err, res) {
+								const { iat, exp, token } = res.body;
+								const oldPassword = res.body.password;
+								const oldTimestamp = res.body.updated_at;
+								const updateUser = {
+									"email": "realperson2@realemail.com",
+									"password": "def456",
+									"type": "Applicant"
+								};
+								chai.request(server)
+									.put("/users/self")
+									.send(updateUser)
+									.set("Authorization", "Bearer " + token)
+									.end(function (err, res) {
+										res.should.have.status(200);
+
+										// Get self
+										chai.request(server)
+											.get("/users/self")
+											.set("Authorization", "Bearer " + token)
+											.end(function (err, res) {
+												res.body._id.should.equal(userId);
+												res.body.email.should.equal(updateUser.email);
+												res.body.type.should.equal(updateUser.type);
+												res.body.password.should.not.equal(oldPassword);
+												res.body.updated_at.should.not.equal(oldTimestamp);
+												done();
+											});
+									});
+							});
+					});
+			});
+	});
+
+	// Test /users/self DELETE
+	it("should delete the user associated with the token on /users/self DEL", function (done) {
+		// Add user
+		chai.request(server)
+			.post("/signup")
+			.send(newUser)
+			.end(function (err, res) {
+				const userId = res.body._id;
+
+				User.findOneAndUpdate(
+					{ email: newUser.email },
+					{ verified: true }
+					, function (err, doc, res) {
+						// Login user
+						chai.request(server)
+							.post("/login")
+							.send({ "email": newUser.email, "password": newUser.password })
+							.end(function (err, res) {
+								const { iat, exp, token } = res.body;
+								chai.request(server)
+									.del("/users/self")
+									.set("Authorization", "Bearer " + token)
+									.end(function (err, res) {
+										res.should.have.status(204);
+
+										chai.request(server)
+											.get("/users/" + userId)
+											.set("Authorization", "Bearer " + godToken)
+											.end(function (err, res) {
+												res.should.have.status(404);
+												done();
+											});
 									});
 							});
 					});

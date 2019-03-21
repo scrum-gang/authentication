@@ -1,8 +1,8 @@
-# Update user by id
+# Update user by token
 
 Updates a user with the corresponding ID.
 
-**URL :** `/users/:id`
+**URL :** `/users/self`
 
 **Method :** `PUT`
 
@@ -10,7 +10,7 @@ Updates a user with the corresponding ID.
 
 ```json
 "Content-Type": "application/json"
-"Authorization": "Bearer [valid Moderator token]"
+"Authorization": "Bearer [valid token]"
 ```
 
 **Body :**

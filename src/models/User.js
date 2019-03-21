@@ -19,13 +19,36 @@ const UserSchema = new mongoose.Schema({
 		type: Boolean,
 		required: true
 	},
-	git: {
+	name: {
 		type: String,
-		required: false
+		required: false,
+		trim: true
+	},
+	address: {
+		type: String,
+		required: false,
+		trim: true
+	},
+	github: {
+		type: String,
+		required: false,
+		trim: true
 	},
 	linkedin: {
 		type: String,
-		required: false
+		required: false,
+		trim: true
+	},
+	stackoverflow: {
+		type: String,
+		required: false,
+		trim: true
+	}
+},
+{
+	timestamps: {
+		createdAt: "created_at",
+		updatedAt: "updated_at"
 	}
 });
 
