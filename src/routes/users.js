@@ -147,14 +147,12 @@ module.exports = server => {
 		});
 	});
 
-	var sendEmail = async function (host, user) {
+	function sendEmail (host, user) {
 		const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
 			expiresIn: "15m"
 		});
 
 		if (config.ENV != "test" && config.ENV != "staging-test") {
-			const oauthTokens = await oauth2Client.refreshAccessToken();
-			const accessToken = oauthTokens.credentials.access_token;
 
 			var transporter = mail.createTransport({
 				service: "gmail",
@@ -163,8 +161,7 @@ module.exports = server => {
 					user: "authboiis@gmail.com",
 					clientId: config.CLIENT_ID,
 					clientSecret: config.CLIENT_SECRET,
-					refreshToken: config.REFRESH_TOKEN,
-					accessToken: accessToken
+					refreshToken: config.REFRESH_TOKEN
 				}
 			});
 
@@ -199,7 +196,7 @@ module.exports = server => {
 				transporter.close();
 			});
 		}
-	};
+	}
 
 	server.post(
 		"/resend",
