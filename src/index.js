@@ -16,6 +16,7 @@ const InvalidToken = require("./models/InvalidToken");
 
 // server.use(rjwt({ secret: config.JWT_SECRET }).unless({ path: ["/auth"] }));
 server.use(restify.plugins.bodyParser());
+server.use(restify.plugins.queryParser());
 
 const cors = corsMiddleware({
 	preflightMaxAge: 5, //Optional

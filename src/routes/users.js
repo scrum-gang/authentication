@@ -148,7 +148,7 @@ module.exports = server => {
 	});
 
 	function sendEmail (host, user) {
-		const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
+		const token = jwt.sign({ id: user.id, email: user.email, type: user.type }, config.JWT_SECRET, {
 			expiresIn: "15m"
 		});
 
@@ -164,17 +164,18 @@ module.exports = server => {
 					refreshToken: config.REFRESH_TOKEN
 				}
 			});
+			console.log(token);
 
 			const parts = token.split(".");
 
 			const link =
 				"http://" +
 				host +
-				"/verify/" +
+				"/verify?header=" +
 				parts[0] +
-				"/" +
+				"&payload=" +
 				parts[1] +
-				"/" +
+				"&signature=" +
 				parts[2];
 
 			const mailOptions = {
@@ -456,15 +457,15 @@ module.exports = server => {
 	);
 
 	server.get(
-		"/verify/:header/:payload/:signature",
+		"/verify",
 		async (req, res, next) => {
 			try {
 				const token =
-					req.params.header +
+					req.query.header +
 					"." +
-					req.params.payload +
+					req.query.payload +
 					"." +
-					req.params.signature;
+					req.query.signature;
 				const { email, iat, exp } = jwt.decode(token);
 
 				await User.findOneAndUpdate(
