@@ -16,10 +16,10 @@
   "author": "Seb Andrade, Alexander Harris, Bogdan Dimitru, David Ritch, Laurent Chenet",
   "license": "MIT",
   "dependencies": {
-    "@sendgrid/mail": "^6.3.1",
     "bcryptjs": "^2.4.3",
     "cross-env": "^5.2.0",
     "jsonwebtoken": "^8.3.0",
+    "mailgun-js": "^0.22.0",
     "mongoose": "^5.3.7",
     "mongoose-timestamp": "^0.6.0",
     "node-cron": "^2.0.3",

@@ -6,7 +6,7 @@ const User = require("../models/User");
 const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
-const sgMail = require("@sendgrid/mail");
+const mailgun = require("mailgun-js")({apiKey: config.MAILGUN_API_KEY, domain: config.MAILGUN_DOMAIN});
 
 module.exports = server => {
 
@@ -142,7 +142,6 @@ module.exports = server => {
 		});
 
 		if (config.ENV != "test" && config.ENV != "staging") {
-			sgMail.setApiKey(config.SENDGRID_API_KEY);
 
 			const parts = token.split(".");
 
@@ -157,8 +156,8 @@ module.exports = server => {
 				parts[2];
 
 			var mailOptions = {
+				from: "JobHub Authentication",
 				to: user.email,
-				from: "jobhub-authentication@scrumgang.com",
 				subject: "JobHub Account Verification",
 				html:
 					"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
@@ -167,7 +166,9 @@ module.exports = server => {
 					"<br> Thanks for using JobHub!"
 			};
 
-			sgMail.send(mailOptions);
+			mailgun.messages().send(mailOptions, function(error, body) {
+				console.log(body);
+			});
 		}
 	}
 

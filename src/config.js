@@ -6,5 +6,6 @@ module.exports = {
 	MONGODB_URI_STAGING: process.env.MONGODB_URI_STAGING,
 	JWT_SECRET: process.env.JWT_SECRET || "secret",
 	MOD_SECRET: process.env.MOD_SECRET || "secret",
-	SENDGRID_API_KEY: process.env.SENDGRID_API_KEY
+	MAILGUN_API_KEY: process.env.MAILGUN_API_KEY,
+	MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN
 };
