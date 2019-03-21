@@ -10,7 +10,6 @@ Updates a user with the corresponding ID.
 
 ```json
 "Content-Type": "application/json"
-"Authorization": "Bearer [valid Moderator token]"
 ```
 
 **Body :**

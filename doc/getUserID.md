@@ -8,7 +8,6 @@ Return user with corresponding ID.
 
 ```json
 "Content-type": "application/json"
-"Authorization": "Bearer [valid Moderator token]"
 ```
 
 ## Success Reponse

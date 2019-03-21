@@ -1,6 +1,6 @@
 # Delete user by id
 
-Deletes a user with the corresponding ID.
+Deletes a user with the corresponding ID. Requires corresponding JWT token.
 
 **URL :** `/users/:id`
 
@@ -10,7 +10,7 @@ Deletes a user with the corresponding ID.
 
 ```json
 "Content-type": "application/json"
-"Authorization": "Bearer [valid Moderator token]"
+"Authorization": "Bearer [token]"
 ```
 
 ## Success Reponse
