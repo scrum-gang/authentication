@@ -9,7 +9,7 @@ const config = require("../config");
 const nodemailer = require("nodemailer");
 
 module.exports = server => {
-	
+
 	function validateEmail(email) {
 		var re = /\S+@\S+\.\S+/;
 		return re.test(email);
@@ -47,6 +47,10 @@ module.exports = server => {
 			return false;
 		}
 	}
+
+	server.get("/", async (req, res, next) => {
+		res.send("👮 Welcome to the Jobhub Authentication Microservice! 👮");
+	});
 
 	server.post("/signup", async (req, res, next) => {
 		if (typeof req.body === "undefined") {
@@ -172,7 +176,7 @@ module.exports = server => {
 	}
 
 	server.post(
-		"/resend", 
+		"/resend",
 		async (req, res, next) => {
 			const { email } = req.body;
 			const user = await User.findOne({ email });
@@ -192,7 +196,7 @@ module.exports = server => {
 
 	// auth user
 	server.post(
-		"/login", 
+		"/login",
 		async (req, res, next) => {
 			const { email, password } = req.body;
 
@@ -260,8 +264,8 @@ module.exports = server => {
 
 	// update user
 	server.put(
-		"/users/:id", 
-		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }), 
+		"/users/:id",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
 			if (!req.is("application/json")) {
 				return next(new errors.InvalidContentError("Expects 'application/json"));
@@ -296,7 +300,7 @@ module.exports = server => {
 							{ _id: req.params.id },
 							updatedUser
 						);
-						
+
 						if (user == null) {
 							return next(new errors.ResourceNotFoundError(`There is no user with the id ${req.params.id}`));
 						}
@@ -396,7 +400,7 @@ module.exports = server => {
 							{ _id: payload.id },
 							updatedUser
 						);
-						
+
 						if (user == null) {
 							return next(new errors.ResourceNotFoundError(`There is no user with the id ${payload.id}`));
 						}
@@ -413,9 +417,9 @@ module.exports = server => {
 			});
 		}
 	);
-	
+
 	server.del(
-		"/users/self", 
+		"/users/self",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async(req, res, next) => {
 			const bearer = req.header("Authorization");
@@ -429,7 +433,7 @@ module.exports = server => {
 	);
 
 	server.get(
-		"/verify/:header/:payload/:signature", 
+		"/verify/:header/:payload/:signature",
 		async (req, res, next) => {
 			try {
 				const token =
