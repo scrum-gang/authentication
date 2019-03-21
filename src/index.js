@@ -45,7 +45,7 @@ if (isTestEnv) {
 	server.listen(config.PORT, () => {
 		mongoose.set("useFindAndModify", false);
 		mongoose.connect(
-			config.ENV == "staging"
+			(config.ENV == "staging" || config.ENV == "staging-test")
 				? config.MONGODB_URI_STAGING
 				: config.MONGODB_URI,
 			{ useNewUrlParser: true }

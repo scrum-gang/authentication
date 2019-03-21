@@ -152,10 +152,10 @@ module.exports = server => {
 			expiresIn: "15m"
 		});
 
-		if (config.ENV != "test" && config.ENV != "staging") {
+		if (config.ENV != "test" && config.ENV != "staging-test") {
 			const oauthTokens = await oauth2Client.refreshAccessToken();
 			const accessToken = oauthTokens.credentials.access_token;
-			
+
 			var transporter = mail.createTransport({
 				service: "gmail",
 				auth: {
