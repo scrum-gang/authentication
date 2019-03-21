@@ -8,6 +8,7 @@ Return list of all users.
 
 ```json
 "Content-type": "application/json"
+"Authorization": "Bearer [valid Moderator token]"
 ```
 
 ## Success Reponse
