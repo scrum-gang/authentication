@@ -6,7 +6,7 @@ const User = require("../models/User");
 const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
 
 module.exports = server => {
 
@@ -138,16 +138,10 @@ module.exports = server => {
 
 	function sendEmail(host, user) {
 		const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
-			expiresIn: "30m"
+			expiresIn: "15m"
 		});
 
-		var transporter = nodemailer.createTransport({
-			service: "gmail.com",
-			auth: {
-				user: "authboiis@gmail.com",
-				pass: "Boi1s42069"
-			}
-		});
+		sgMail.setApiKey(config.SENDGRID_API_KEY);
 
 		const parts = token.split(".");
 
@@ -162,8 +156,8 @@ module.exports = server => {
 			parts[2];
 
 		var mailOptions = {
-			from: "Authboiis",
 			to: user.email,
+			from: "authentication@jobhub.com",
 			subject: "JobHub Account Verification",
 			html:
 				"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
@@ -172,13 +166,7 @@ module.exports = server => {
 				"<br> Thanks for using JobHub!"
 		};
 
-		transporter.sendMail(mailOptions, function(error, info) {
-			if (error) {
-				console.log(error);
-			} else {
-				console.log("Email sent: " + info.response);
-			}
-		});
+		sgMail.send(mailOptions);
 	}
 
 	server.post(
