@@ -311,6 +311,95 @@ describe("Endpoints: functionality", function () {
 			});
 	});
 
+	// Test /users/self PUT
+	it("should update the user associated with the token on /users/self PUT", function (done) {
+		// Add user
+		chai.request(server)
+			.post("/signup")
+			.send(newUser)
+			.end(function (err, res) {
+				const userId = res.body._id;
+
+				User.findOneAndUpdate(
+					{ email: newUser.email },
+					{ verified: true }
+					, function (err, doc, res) {
+						// Login user
+						chai.request(server)
+							.post("/login")
+							.send({ "email": newUser.email, "password": newUser.password })
+							.end(function (err, res) {
+								const { iat, exp, token } = res.body;
+								const oldPassword = res.body.password;
+								const oldTimestamp = res.body.updated_at;
+								const updateUser = {
+									"email": "realperson2@realemail.com",
+									"password": "def456",
+									"type": "Applicant"
+								};
+								chai.request(server)
+									.put("/users/self")
+									.send(updateUser)
+									.set("Authorization", "Bearer " + token)
+									.end(function (err, res) {
+										res.should.have.status(200);
+
+										// Get self
+										chai.request(server)
+											.get("/users/self")
+											.set("Authorization", "Bearer " + token)
+											.end(function (err, res) {
+												res.body._id.should.equal(userId);
+												res.body.email.should.equal(updateUser.email);
+												res.body.type.should.equal(updateUser.type);
+												res.body.password.should.not.equal(oldPassword);
+												res.body.updated_at.should.not.equal(oldTimestamp);
+												done();
+											});
+									});
+							});
+					});
+			});
+	});
+
+	// Test /users/self DELETE
+	it("should delete the user associated with the token on /users/self DEL", function (done) {
+		// Add user
+		chai.request(server)
+			.post("/signup")
+			.send(newUser)
+			.end(function (err, res) {
+				const userId = res.body._id;
+
+				User.findOneAndUpdate(
+					{ email: newUser.email },
+					{ verified: true }
+					, function (err, doc, res) {
+						// Login user
+						chai.request(server)
+							.post("/login")
+							.send({ "email": newUser.email, "password": newUser.password })
+							.end(function (err, res) {
+								const { iat, exp, token } = res.body;
+								chai.request(server)
+									.del("/users/self")
+									.set("Authorization", "Bearer " + token)
+									.end(function (err, res) {
+										res.should.have.status(204);
+
+										chai.request(server)
+											.get("/users/" + userId)
+											.set("Authorization", "Bearer " + godToken)
+											.end(function (err, res) {
+												res.should.have.status(404);
+												done();
+											});
+									});
+							});
+					});
+			});
+	});
+
 	// Test /resend POST
 	it("should resend an email if the user is unverified on /resend POST", function (done) {
 		// Add user
