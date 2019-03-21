@@ -7,6 +7,11 @@ const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
 const nodemailer = require("nodemailer");
+var loginAttemptCtr=0;
+var loginAttempts = new Object();
+var ipDict = new Object();
+var timer;
+var timer1;
 
 module.exports = server => {
 	// register User
@@ -75,6 +80,8 @@ module.exports = server => {
 			type,
 			verified: false
 		});
+
+		loginAttempts[email]=0;
 
 		bcrypt.genSalt(10, (err, salt) => {
 			bcrypt.hash(user.password, salt, async (err, hash) => {
@@ -159,6 +166,14 @@ module.exports = server => {
 		const { email, password } = req.body;
 
 		try {
+			ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+			if (ipDict[ip]==1){
+				throw "Too many login attempts, please try again later.";
+			}
+			else if(loginAttempts[email]>=10){
+				ipDict[ip]=1;
+				timer = setTimeout(function(){ipDict[ip]=0;}, 300000);
+			}
 			const user = await auth.authenticate(email, password);
 			const token = jwt.sign(
 				{ id: user.id, email: user.email, type: user.type },
@@ -174,7 +189,10 @@ module.exports = server => {
 
 			next();
 		} catch (err) {
+			loginAttempts[email]=loginAttempts[email]+1;
+			timer1 = setTimeout(function(){loginAttempts[email]=loginAttempts[email]-1;}, 300000);
 			return next(new errors.UnauthorizedError(err));
+			
 		}
 	});
 
