@@ -6,7 +6,18 @@ const User = require("../models/User");
 const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
-const nodemailer = require("nodemailer");
+const mail = require("nodemailer");
+const { google } = require("googleapis");
+const OAuth2 = google.auth.OAuth2;
+
+const oauth2Client = new OAuth2 (
+	config.CLIENT_ID,
+	config.CLIENT_SECRET,
+	"https://developers.google.com/oauthplayground"
+);
+oauth2Client.setCredentials({
+	refresh_token: config.REFRESH_TOKEN
+});
 
 module.exports = server => {
 
@@ -136,49 +147,55 @@ module.exports = server => {
 		});
 	});
 
-	function sendEmail(host, user) {
-		const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
-			expiresIn: "30m"
+	function sendEmail (host, user) {
+		const token = jwt.sign({ id: user.id, email: user.email, type: user.type }, config.JWT_SECRET, {
+			expiresIn: "15m"
 		});
 
-		var transporter = nodemailer.createTransport({
-			service: "gmail.com",
-			auth: {
-				user: "authboiis@gmail.com",
-				pass: "Boi1s42069"
-			}
-		});
+		if (config.ENV != "test" && config.ENV != "staging-test") {
 
-		const parts = token.split(".");
+			var transporter = mail.createTransport({
+				service: "gmail",
+				auth: {
+					type: "OAuth2",
+					user: "authboiis@gmail.com",
+					clientId: config.CLIENT_ID,
+					clientSecret: config.CLIENT_SECRET,
+					refreshToken: config.REFRESH_TOKEN
+				}
+			});
 
-		const link =
-			"http://" +
-			host +
-			"/verify/" +
-			parts[0] +
-			"/" +
-			parts[1] +
-			"/" +
-			parts[2];
+			const parts = token.split(".");
 
-		var mailOptions = {
-			from: "Authboiis",
-			to: user.email,
-			subject: "JobHub Account Verification",
-			html:
-				"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
-				link +
-				">Click here to verify</a>" +
-				"<br> Thanks for using JobHub!"
-		};
+			const link =
+				"http://" +
+				host +
+				"/verify?header=" +
+				parts[0] +
+				"&payload=" +
+				parts[1] +
+				"&signature=" +
+				parts[2];
 
-		transporter.sendMail(mailOptions, function(error, info) {
-			if (error) {
-				console.log(error);
-			} else {
-				console.log("Email sent: " + info.response);
-			}
-		});
+			const mailOptions = {
+				from: "authboiis@gmail.com",
+				to: user.email,
+				subject: "JobHub Account Verification",
+				html:
+					"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
+					link +
+					">Click here to verify</a>" +
+					"<br> Thanks for using JobHub!"
+			};
+
+			transporter.sendMail(mailOptions, function (err, info) {
+				if (err)
+					console.log(err);
+				else
+					console.log(info);
+				transporter.close();
+			});
+		}
 	}
 
 	server.post(
@@ -439,15 +456,15 @@ module.exports = server => {
 	);
 
 	server.get(
-		"/verify/:header/:payload/:signature",
+		"/verify",
 		async (req, res, next) => {
 			try {
 				const token =
-					req.params.header +
+					req.query.header +
 					"." +
-					req.params.payload +
+					req.query.payload +
 					"." +
-					req.params.signature;
+					req.query.signature;
 				const { email, iat, exp } = jwt.decode(token);
 
 				await User.findOneAndUpdate(
