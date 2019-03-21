@@ -49,7 +49,13 @@ module.exports = server => {
 	}
 
 	server.get("/", async (req, res, next) => {
-		res.send("👮 Welcome to the Jobhub Authentication Microservice! 👮");
+		var body = "<html><head><meta charset='UTF-8'></head><body>👮 Welcome to the Jobhub Authentication Microservice! 👮</body></html>";
+		res.writeHead(200, {
+			"Content-Length": Buffer.byteLength(body),
+			"Content-Type": "text/html"
+		});
+		res.write(body);
+		res.end();
 	});
 
 	server.post("/signup", async (req, res, next) => {
