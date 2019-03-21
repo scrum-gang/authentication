@@ -6,7 +6,18 @@ const User = require("../models/User");
 const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
-const mailgun = (config.ENV != "test" && config.ENV != "staging") ? require("mailgun-js")({apiKey: config.MAILGUN_API_KEY, domain: config.MAILGUN_DOMAIN}) : null;
+const mail = require("nodemailer");
+const { google } = require("googleapis");
+const OAuth2 = google.auth.OAuth2;
+
+const oauth2Client = new OAuth2 (
+	config.CLIENT_ID,
+	config.CLIENT_SECRET,
+	"https://developers.google.com/oauthplayground"
+);
+oauth2Client.setCredentials({
+	refresh_token: config.REFRESH_TOKEN
+});
 
 module.exports = server => {
 
@@ -136,12 +147,26 @@ module.exports = server => {
 		});
 	});
 
-	function sendEmail(host, user) {
+	var sendEmail = async function (host, user) {
 		const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
 			expiresIn: "15m"
 		});
 
 		if (config.ENV != "test" && config.ENV != "staging") {
+			const oauthTokens = await oauth2Client.refreshAccessToken();
+			const accessToken = oauthTokens.credentials.access_token;
+			
+			var transporter = mail.createTransport({
+				service: "gmail",
+				auth: {
+					type: "OAuth2",
+					user: "authboiis@gmail.com",
+					clientId: config.CLIENT_ID,
+					clientSecret: config.CLIENT_SECRET,
+					refreshToken: config.REFRESH_TOKEN,
+					accessToken: accessToken
+				}
+			});
 
 			const parts = token.split(".");
 
@@ -155,8 +180,8 @@ module.exports = server => {
 				"/" +
 				parts[2];
 
-			var mailOptions = {
-				from: "JobHub Authentication",
+			const mailOptions = {
+				from: "authboiis@gmail.com",
 				to: user.email,
 				subject: "JobHub Account Verification",
 				html:
@@ -166,11 +191,15 @@ module.exports = server => {
 					"<br> Thanks for using JobHub!"
 			};
 
-			mailgun.messages().send(mailOptions, function(error, body) {
-				console.log(body);
+			transporter.sendMail(mailOptions, function (err, info) {
+				if (err)
+					console.log(err);
+				else
+					console.log(info);
+				transporter.close();
 			});
 		}
-	}
+	};
 
 	server.post(
 		"/resend",

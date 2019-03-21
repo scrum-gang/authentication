@@ -6,6 +6,7 @@ module.exports = {
 	MONGODB_URI_STAGING: process.env.MONGODB_URI_STAGING,
 	JWT_SECRET: process.env.JWT_SECRET || "secret",
 	MOD_SECRET: process.env.MOD_SECRET || "secret",
-	MAILGUN_API_KEY: process.env.MAILGUN_API_KEY,
-	MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN
+	CLIENT_ID: process.env.CLIENT_ID,
+	CLIENT_SECRET: process.env.CLIENT_SECRET,
+	REFRESH_TOKEN: process.env.REFRESH_TOKEN
 };
