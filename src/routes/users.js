@@ -164,7 +164,6 @@ module.exports = server => {
 					refreshToken: config.REFRESH_TOKEN
 				}
 			});
-			console.log(token);
 
 			const parts = token.split(".");
 
