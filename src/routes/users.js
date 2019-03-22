@@ -21,11 +21,37 @@ oauth2Client.setCredentials({
 	refresh_token: config.REFRESH_TOKEN
 });
 
+var loginAttemptCtr=0;
+var loginAttempts = new Object();
+var requestCtr = new Object();
+var ipDictLogAtt = new Object();
+var ipDictReqAtt = new Object();
+var timer;
+var ip;
+
+
 module.exports = server => {
 
 	function validateEmail(email) {
 		var re = /\S+@\S+\.\S+/;
 		return re.test(email);
+	}
+
+	function newRequest(ip){
+		if (config.ENV == "production") {
+			if (requestCtr[ip]==undefined){
+				requestCtr[ip]=1;
+			} else { requestCtr[ip]= requestCtr[ip]+1;}
+			timer = setTimeout(function(){requestCtr[ip]=requestCtr[ip]-1;}, 60000);
+
+			if (ipDictReqAtt[ip]==1){
+				throw "Too many requests, ip timed out.";
+			}
+			else if(requestCtr[ip]>=20){
+				ipDictReqAtt[ip]=1;
+				timer = setTimeout(function(){ipDictReqAtt[ip]=0;}, 300000);
+			}
+		}
 	}
 
 	var isRevokedCallback = async function (req, payload, done) {
@@ -95,6 +121,14 @@ module.exports = server => {
 	});
 
 	server.post("/signup", async (req, res, next) => {
+
+		ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+		try{
+			newRequest(ip);
+		} catch (err) {
+			return next(new errors.UnauthorizedError(err));
+		}
+
 		if (typeof req.body === "undefined") {
 			return next(
 				new errors.MissingParameterError(
@@ -154,6 +188,8 @@ module.exports = server => {
 			type,
 			verified: false
 		});
+
+		loginAttempts[email]=0;
 
 		bcrypt.genSalt(10, (err, salt) => {
 			bcrypt.hash(user.password, salt, async (err, hash) => {
@@ -223,57 +259,85 @@ module.exports = server => {
 		}
 	}
 
-	server.post(
-		"/resend",
-		async (req, res, next) => {
-			const { email } = req.body;
-			const user = await User.findOne({ email });
+	server.post("/resend", async (req, res, next) => {
 
-			if (user === null) {
-				return next(new errors.BadRequestError("No user with given email"));
-			} else {
-				if (user.verified) {
-					return next(new errors.BadRequestError("User is already verified."));
-				}
-				const host = req.header("Host");
-				sendEmail(host, user);
-				res.send(200);
-				next();
-			}
+		ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+		try{
+			newRequest(ip);
+		} catch (err) {
+			return next(new errors.UnauthorizedError(err));
 		}
-	);
+
+		const { email } = req.body;
+		const user = await User.findOne({ email });
+
+
+		if (user === null) {
+			return next(new errors.BadRequestError("No user with given email"));
+		} else {
+			if (user.verified) {
+				return next(new errors.BadRequestError("User is already verified."));
+			}
+			const host = req.header("Host");
+			sendEmail(host, user);
+			res.send(200);
+		}
+	});
 
 	// auth user
-	server.post(
-		"/login",
-		async (req, res, next) => {
-			const { email, password } = req.body;
+	server.post("/login", async (req, res, next) => {
+		const { email, password } = req.body;
 
-			try {
-				const user = await auth.authenticate(email, password);
-				const token = jwt.sign(
-					{ id: user.id, email: user.email, type: user.type },
-					config.JWT_SECRET,
-					{
-						expiresIn: "15m"
-					}
-				);
-
-				const { iat, exp } = jwt.decode(token);
-				const payload = Object.assign({}, { user }, { iat, exp, token });
-				res.send(payload);
-
-				next();
-			} catch (err) {
-				return next(new errors.UnauthorizedError(err));
-			}
+		ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+		try{
+			newRequest(ip);
+		} catch (err) {
+			return next(new errors.UnauthorizedError(err));
 		}
-	);
+
+		try {
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			if (ipDictLogAtt[ip]==1){
+				throw "Too many login attempts, please try again later.";
+			}
+			else if(loginAttempts[email]>=10){
+				ipDictLogAtt[ip]=1;
+				timer = setTimeout(function(){ipDictLogAtt[ip]=0;}, 300000);
+			}
+			const user = await auth.authenticate(email, password);
+			const token = jwt.sign(
+				{ id: user.id, email: user.email, type: user.type },
+				config.JWT_SECRET,
+				{
+					expiresIn: "15m"
+				}
+			);
+
+			const { iat, exp } = jwt.decode(token);
+			const payload = Object.assign({}, { user }, { iat, exp, token });
+			res.send(payload);
+
+			next();
+		} catch (err) {
+			loginAttempts[email]=loginAttempts[email]+1;
+			timer = setTimeout(function(){loginAttempts[email]=loginAttempts[email]-1;}, 300000);
+			return next(new errors.UnauthorizedError(err));
+
+		}
+	});
 
 	server.get(
 		"/users",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
+
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+
 			try {
 				if (moderator(req)) {
 					const users = await User.find({});
@@ -291,6 +355,14 @@ module.exports = server => {
 		"/users/:id",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
+
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+
 			try {
 				if (moderator(req)) {
 					const users = await User.findById(req.params.id);
@@ -316,6 +388,14 @@ module.exports = server => {
 		"/users/:id",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
+
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+
 			if (!req.is("application/json")) {
 				return next(new errors.InvalidContentError("Expects 'application/json"));
 			}
@@ -371,6 +451,14 @@ module.exports = server => {
 		"/users/:id",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
+
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+
 			try {
 				if (moderator(req)) {
 					const user = await User.findOneAndRemove({ _id: req.params.id });
@@ -396,6 +484,14 @@ module.exports = server => {
 		"/users/self",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
+
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+
 			try {
 				const bearer = req.header("Authorization");
 				const token = bearer.split(" ")[1];
@@ -413,10 +509,48 @@ module.exports = server => {
 		}
 	);
 
+	server.get("/verify/:header/:payload/:signature", async (req, res, next) => {
+
+		ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+		try{
+			newRequest(ip);
+		} catch (err) {
+			return next(new errors.UnauthorizedError(err));
+		}
+
+		try {
+			const token =
+				req.params.header +
+				"." +
+				req.params.payload +
+				"." +
+				req.params.signature;
+			const { email, iat, exp } = jwt.decode(token);
+
+			const user = await User.findOneAndUpdate(
+				{ email: email },
+				{ verified: true }
+			);
+
+			res.send({ iat, exp, token }, 200);
+			next();
+		} catch (err) {
+			return next(new errors.UnauthorizedError("Invalid token."));
+		}
+	});
+
 	server.put(
 		"/users/self",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
+
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+
 			if (!req.is("application/json")) {
 				return next(new errors.InvalidContentError("Expects 'application/json"));
 			}
@@ -471,6 +605,14 @@ module.exports = server => {
 		"/users/self",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async(req, res, next) => {
+
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+
 			const bearer = req.header("Authorization");
 			const token = bearer.split(" ")[1];
 			const payload = jwt.decode(token);
@@ -484,6 +626,14 @@ module.exports = server => {
 	server.get(
 		"/verify",
 		async (req, res, next) => {
+
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+
 			try {
 				const token =
 					req.query.header +
@@ -510,6 +660,14 @@ module.exports = server => {
 		"/logout",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
+
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
+
 			try {
 				const token = req.header("Authorization").split(" ")[1];
 				const { email, iat, exp } = jwt.decode(token);
