@@ -62,18 +62,22 @@ module.exports = server => {
 	}
 
 	server.get("/", async (req, res, next) => {
-		var body = "<html><head><meta charset='UTF-8'></head><body>👮 Welcome to the Jobhub Authentication Microservice! 👮</body></html>";
-		res.writeHead(200, {
-			"Content-Length": Buffer.byteLength(body),
-			"Content-Type": "text/html"
+		const rootDir = path.resolve(__dirname, "..");
+		const indexPath = path.join(rootDir, "index.html");
+
+		fs.readFile(indexPath, function (err, file) {
+			res.writeHead(200, {
+				"Content-Length": Buffer.byteLength(file),
+				"Content-Type": "text/html"
+			});
+			res.write(file);
+			res.end();
 		});
-		res.write(body);
-		res.end();
 	});
 
 	server.get("/favicon.ico", async (req, res, next) => {
-		const rootDir = await path.resolve(__dirname, "..", "..");
-		const favPath = await path.join(rootDir, "favicon.ico");
+		const rootDir = path.resolve(__dirname, "..", "..");
+		const favPath = path.join(rootDir, "favicon.ico");
 		const stats = await fs.statSync(favPath);
 
 		fs.readFile(favPath, function (err, file) {
@@ -494,8 +498,8 @@ module.exports = server => {
 					{ verified: true }
 				);
 
-				res.send({ iat, exp, token }, 200);
-				next();
+				// res.send({ iat, exp, token }, 200);
+				res.redirect(config.FRONTEND_URL + "/login", next);
 			} catch (err) {
 				return next(new errors.UnauthorizedError("Invalid token."));
 			}

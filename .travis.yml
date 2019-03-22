@@ -4,9 +4,14 @@ node_js:
 cache:
   directories:
     - "node_modules"
-script:
-  - npm test
-  - npm run staging
+master:
+  script:
+    - npm test
+    - npm run staging
+development:
+  script:
+    - npm test
+    - npm run staging
 after_success: npm run coverage
 deploy:
   provider: heroku
