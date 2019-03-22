@@ -498,8 +498,8 @@ module.exports = server => {
 					{ verified: true }
 				);
 
-				res.send({ iat, exp, token }, 200);
-				next();
+				// res.send({ iat, exp, token }, 200);
+				res.redirect(config.FRONTEND_URL + "/login", next);
 			} catch (err) {
 				return next(new errors.UnauthorizedError("Invalid token."));
 			}
