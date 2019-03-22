@@ -38,17 +38,19 @@ module.exports = server => {
 	}
 
 	function newRequest(ip){
-		if (requestCtr[ip]==undefined){
-			requestCtr[ip]=1;
-		} else { requestCtr[ip]= requestCtr[ip]+1;}
-		timer = setTimeout(function(){requestCtr[ip]=requestCtr[ip]-1;}, 60000);
+		if (config.ENV == "production") {
+			if (requestCtr[ip]==undefined){
+				requestCtr[ip]=1;
+			} else { requestCtr[ip]= requestCtr[ip]+1;}
+			timer = setTimeout(function(){requestCtr[ip]=requestCtr[ip]-1;}, 60000);
 
-		if (ipDictReqAtt[ip]==1){
-			throw "Too many requests, ip timed out.";
-		}
-		else if(requestCtr[ip]>=20){
-			ipDictReqAtt[ip]=1;
-			timer = setTimeout(function(){ipDictReqAtt[ip]=0;}, 300000);
+			if (ipDictReqAtt[ip]==1){
+				throw "Too many requests, ip timed out.";
+			}
+			else if(requestCtr[ip]>=20){
+				ipDictReqAtt[ip]=1;
+				timer = setTimeout(function(){ipDictReqAtt[ip]=0;}, 300000);
+			}
 		}
 	}
 
