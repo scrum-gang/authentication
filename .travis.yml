@@ -6,7 +6,7 @@ cache:
     - "node_modules"
 script:
   - npm test
-  - if [ "$TRAVIS_BRANCH" == "master" || "$TRAVIS_BRANCH" == "development"]; then
+  - if [ "$TRAVIS_BRANCH" == "master" ] || [ "$TRAVIS_BRANCH" == "development" ] ; then
       npm run staging;
     fi
 after_success: npm run coverage
