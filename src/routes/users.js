@@ -7,6 +7,8 @@ const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
 const mail = require("nodemailer");
+const fs = require("fs");
+const path = require("path");
 const { google } = require("googleapis");
 const OAuth2 = google.auth.OAuth2;
 
@@ -84,13 +86,36 @@ module.exports = server => {
 	}
 
 	server.get("/", async (req, res, next) => {
-		var body = "<html><head><meta charset='UTF-8'></head><body>👮 Welcome to the Jobhub Authentication Microservice! 👮</body></html>";
-		res.writeHead(200, {
-			"Content-Length": Buffer.byteLength(body),
-			"Content-Type": "text/html"
+		const rootDir = path.resolve(__dirname, "..");
+		const indexPath = path.join(rootDir, "index.html");
+
+		fs.readFile(indexPath, function (err, file) {
+			res.writeHead(200, {
+				"Content-Length": Buffer.byteLength(file),
+				"Content-Type": "text/html"
+			});
+			res.write(file);
+			res.end();
 		});
-		res.write(body);
-		res.end();
+	});
+
+	server.get("/favicon.ico", async (req, res, next) => {
+		const rootDir = path.resolve(__dirname, "..", "..");
+		const favPath = path.join(rootDir, "favicon.ico");
+		const stats = await fs.statSync(favPath);
+
+		fs.readFile(favPath, function (err, file) {
+			if (err) {
+				res.send(500);
+				next();
+			}
+			res.writeHead(200, {
+				"Content-Length": stats.size,
+				"Content-Type": "image/ico"
+			});
+			res.write(file);
+			res.end();
+		});
 	});
 
 	server.post("/signup", async (req, res, next) => {
@@ -232,7 +257,6 @@ module.exports = server => {
 		}
 	}
 
-
 	server.post("/resend", async (req, res, next) => {
 
 		ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
@@ -296,7 +320,7 @@ module.exports = server => {
 			loginAttempts[email]=loginAttempts[email]+1;
 			timer = setTimeout(function(){loginAttempts[email]=loginAttempts[email]-1;}, 300000);
 			return next(new errors.UnauthorizedError(err));
-			
+
 		}
 	});
 
@@ -304,14 +328,14 @@ module.exports = server => {
 		"/users",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
-      
+
 			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 			try{
 				newRequest(ip);
 			} catch (err) {
 				return next(new errors.UnauthorizedError(err));
 			}
-      
+
 			try {
 				if (moderator(req)) {
 					const users = await User.find({});
@@ -329,14 +353,14 @@ module.exports = server => {
 		"/users/:id",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
-         
+
 			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 			try{
 				newRequest(ip);
 			} catch (err) {
 				return next(new errors.UnauthorizedError(err));
 			}
-      
+
 			try {
 				if (moderator(req)) {
 					const users = await User.findById(req.params.id);
@@ -362,14 +386,14 @@ module.exports = server => {
 		"/users/:id",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
-            
+
 			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 			try{
 				newRequest(ip);
 			} catch (err) {
 				return next(new errors.UnauthorizedError(err));
 			}
-      
+
 			if (!req.is("application/json")) {
 				return next(new errors.InvalidContentError("Expects 'application/json"));
 			}
@@ -458,7 +482,7 @@ module.exports = server => {
 		"/users/self",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
-			
+
 			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 			try{
 				newRequest(ip);
@@ -505,7 +529,7 @@ module.exports = server => {
 				{ email: email },
 				{ verified: true }
 			);
-      
+
 			res.send({ iat, exp, token }, 200);
 			next();
 		} catch (err) {
@@ -517,14 +541,14 @@ module.exports = server => {
 		"/users/self",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
-            
+
 			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 			try{
 				newRequest(ip);
 			} catch (err) {
 				return next(new errors.UnauthorizedError(err));
 			}
-      
+
 			if (!req.is("application/json")) {
 				return next(new errors.InvalidContentError("Expects 'application/json"));
 			}
@@ -579,14 +603,14 @@ module.exports = server => {
 		"/users/self",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async(req, res, next) => {
-            
+
 			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 			try{
 				newRequest(ip);
 			} catch (err) {
 				return next(new errors.UnauthorizedError(err));
 			}
-      
+
 			const bearer = req.header("Authorization");
 			const token = bearer.split(" ")[1];
 			const payload = jwt.decode(token);
@@ -600,14 +624,14 @@ module.exports = server => {
 	server.get(
 		"/verify",
 		async (req, res, next) => {
-            
+
 			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 			try{
 				newRequest(ip);
 			} catch (err) {
 				return next(new errors.UnauthorizedError(err));
 			}
-      
+
 			try {
 				const token =
 					req.query.header +
@@ -622,8 +646,8 @@ module.exports = server => {
 					{ verified: true }
 				);
 
-				res.send({ iat, exp, token }, 200);
-				next();
+				// res.send({ iat, exp, token }, 200);
+				res.redirect(config.FRONTEND_URL + "/login", next);
 			} catch (err) {
 				return next(new errors.UnauthorizedError("Invalid token."));
 			}
@@ -634,7 +658,7 @@ module.exports = server => {
 		"/logout",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
-			
+
 			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 			try{
 				newRequest(ip);

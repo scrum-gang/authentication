@@ -7,7 +7,7 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "test": "npm run lint && npm run mocha",
-    "lint": "eslint src/** test/**",
+    "lint": "eslint .",
     "mocha": "cross-env NODE_ENV=test nyc --reporter=text mocha --recursive --timeout 10000 --exit",
     "staging": "cross-env NODE_ENV=staging-test mocha --recursive --timeout 10000 --exit",
     "coverage": "nyc report --reporter=text-lcov | coveralls"
