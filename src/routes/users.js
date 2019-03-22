@@ -25,6 +25,7 @@ var requestCtr = new Object();
 var ipDictLogAtt = new Object();
 var ipDictReqAtt = new Object();
 var timer;
+var ip;
 
 
 module.exports = server => {
@@ -94,7 +95,7 @@ module.exports = server => {
 
 	server.post("/signup", async (req, res, next) => {
 
-		ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+		ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 		try{
 			newRequest(ip);
 		} catch (err) {
@@ -234,7 +235,7 @@ module.exports = server => {
 
 	server.post("/resend", async (req, res, next) => {
 
-		ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+		ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 		try{
 			newRequest(ip);
 		} catch (err) {
@@ -245,24 +246,23 @@ module.exports = server => {
 		const user = await User.findOne({ email });
 
 
-			if (user === null) {
-				return next(new errors.BadRequestError("No user with given email"));
-			} else {
-				if (user.verified) {
-					return next(new errors.BadRequestError("User is already verified."));
-				}
-				const host = req.header("Host");
-				sendEmail(host, user);
-				res.send(200);
+		if (user === null) {
+			return next(new errors.BadRequestError("No user with given email"));
+		} else {
+			if (user.verified) {
+				return next(new errors.BadRequestError("User is already verified."));
 			}
+			const host = req.header("Host");
+			sendEmail(host, user);
+			res.send(200);
 		}
-	);
+	});
 
 	// auth user
 	server.post("/login", async (req, res, next) => {
 		const { email, password } = req.body;
 
-		ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+		ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 		try{
 			newRequest(ip);
 		} catch (err) {
@@ -270,7 +270,7 @@ module.exports = server => {
 		}
 
 		try {
-			ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 			if (ipDictLogAtt[ip]==1){
 				throw "Too many login attempts, please try again later.";
 			}
@@ -305,12 +305,12 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
       
-      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      try{
-        newRequest(ip);
-      } catch (err) {
-        return next(new errors.UnauthorizedError(err));
-      }
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
       
 			try {
 				if (moderator(req)) {
@@ -330,12 +330,12 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
          
-      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      try{
-        newRequest(ip);
-      } catch (err) {
-        return next(new errors.UnauthorizedError(err));
-      }
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
       
 			try {
 				if (moderator(req)) {
@@ -363,12 +363,12 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
             
-      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      try{
-        newRequest(ip);
-      } catch (err) {
-        return next(new errors.UnauthorizedError(err));
-      }
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
       
 			if (!req.is("application/json")) {
 				return next(new errors.InvalidContentError("Expects 'application/json"));
@@ -426,12 +426,12 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
 
-		ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-		try{
-			newRequest(ip);
-		} catch (err) {
-			return next(new errors.UnauthorizedError(err));
-		}
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
 
 			try {
 				if (moderator(req)) {
@@ -458,13 +458,13 @@ module.exports = server => {
 		"/users/self",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
-
-		ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-		try{
-			newRequest(ip);
-		} catch (err) {
-			return next(new errors.UnauthorizedError(err));
-		}
+			
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
 
 			try {
 				const bearer = req.header("Authorization");
@@ -485,7 +485,7 @@ module.exports = server => {
 
 	server.get("/verify/:header/:payload/:signature", async (req, res, next) => {
 
-		ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+		ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 		try{
 			newRequest(ip);
 		} catch (err) {
@@ -506,7 +506,7 @@ module.exports = server => {
 				{ verified: true }
 			);
       
-      res.send({ iat, exp, token }, 200);
+			res.send({ iat, exp, token }, 200);
 			next();
 		} catch (err) {
 			return next(new errors.UnauthorizedError("Invalid token."));
@@ -518,12 +518,12 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
             
-      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      try{
-        newRequest(ip);
-      } catch (err) {
-        return next(new errors.UnauthorizedError(err));
-      }
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
       
 			if (!req.is("application/json")) {
 				return next(new errors.InvalidContentError("Expects 'application/json"));
@@ -580,12 +580,12 @@ module.exports = server => {
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async(req, res, next) => {
             
-      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      try{
-        newRequest(ip);
-      } catch (err) {
-        return next(new errors.UnauthorizedError(err));
-      }
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
       
 			const bearer = req.header("Authorization");
 			const token = bearer.split(" ")[1];
@@ -601,12 +601,12 @@ module.exports = server => {
 		"/verify",
 		async (req, res, next) => {
             
-      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      try{
-        newRequest(ip);
-      } catch (err) {
-        return next(new errors.UnauthorizedError(err));
-      }
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
       
 			try {
 				const token =
@@ -634,13 +634,13 @@ module.exports = server => {
 		"/logout",
 		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
 		async (req, res, next) => {
-
-		ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-		try{
-			newRequest(ip);
-		} catch (err) {
-			return next(new errors.UnauthorizedError(err));
-		}
+			
+			ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+			try{
+				newRequest(ip);
+			} catch (err) {
+				return next(new errors.UnauthorizedError(err));
+			}
 
 			try {
 				const token = req.header("Authorization").split(" ")[1];
