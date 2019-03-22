@@ -7,6 +7,8 @@ const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
 const mail = require("nodemailer");
+const fs = require("fs");
+const path = require("path");
 const { google } = require("googleapis");
 const OAuth2 = google.auth.OAuth2;
 
@@ -67,6 +69,25 @@ module.exports = server => {
 		});
 		res.write(body);
 		res.end();
+	});
+
+	server.get("/favicon.ico", async (req, res, next) => {
+		const rootDir = await path.resolve(__dirname, "..", "..");
+		const favPath = await path.join(rootDir, "favicon.ico");
+		const stats = await fs.statSync(favPath);
+
+		fs.readFile(favPath, function (err, file) {
+			if (err) {
+				res.send(500);
+				next();
+			}
+			res.writeHead(200, {
+				"Content-Length": stats.size,
+				"Content-Type": "image/ico"
+			});
+			res.write(file);
+			res.end();
+		});
 	});
 
 	server.post("/signup", async (req, res, next) => {
@@ -213,6 +234,7 @@ module.exports = server => {
 				const host = req.header("Host");
 				sendEmail(host, user);
 				res.send(200);
+				next();
 			}
 		}
 	);
