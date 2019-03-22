@@ -21,6 +21,8 @@ oauth2Client.setCredentials({
 	refresh_token: config.REFRESH_TOKEN
 });
 
+const expire = (config.ENV == "production") ? "15m" : "60m";
+
 var loginAttemptCtr=0;
 var loginAttempts = new Object();
 var requestCtr = new Object();
@@ -210,7 +212,7 @@ module.exports = server => {
 
 	function sendEmail (host, user) {
 		const token = jwt.sign({ id: user.id, email: user.email, type: user.type }, config.JWT_SECRET, {
-			expiresIn: "15m"
+			expiresIn: expire
 		});
 
 		if (config.ENV != "test" && config.ENV != "staging-test") {
@@ -309,7 +311,7 @@ module.exports = server => {
 				{ id: user.id, email: user.email, type: user.type },
 				config.JWT_SECRET,
 				{
-					expiresIn: "15m"
+					expiresIn: expire
 				}
 			);
 
