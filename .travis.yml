@@ -4,14 +4,11 @@ node_js:
 cache:
   directories:
     - "node_modules"
-master:
-  script:
-    - npm test
-    - npm run staging
-development:
-  script:
-    - npm test
-    - npm run staging
+script:
+  - npm test
+  - if [ "$TRAVIS_BRANCH" == "master" || "$TRAVIS_BRANCH" == "development"]; then
+      npm run staging;
+    fi
 after_success: npm run coverage
 deploy:
   provider: heroku
