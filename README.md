@@ -44,6 +44,10 @@ Please note that any new builds on the **development** branch will **wipe** the 
 3. Login using `/login`, keep JWT token.
 4. Can get logged in user using `/users/self` and passing token in header.
 
+## [User Schema](doc/User.md)
+
+Details all the fields in the User model.
+
 ## API Docs
 
 - [Get users](doc/getUsers.md) : `GET /users`
@@ -53,5 +57,13 @@ Please note that any new builds on the **development** branch will **wipe** the 
 - [Signup new user](doc/signup.md) : `POST /signup`
 - [Login existing user](doc/login.md) : `POST /login`
 - [Logout user](doc/logout.md) : `POST /logout`
-- [Get user from token](doc/self.md) : `GET /users/self`
+- [Get user from token](doc/selfGet.md) : `GET /users/self`
+- [Update user from token](doc/selfPut.md) : `PUT /users/self`
+- [Delete user from token](doc/selfDel.md) : `DELETE /users/self`
 - [Resend verification email for unverified user](doc/resend.md) : `POST /resend`
+
+## Endpoint Restrictions
+
+All `users` endpoints except for `/users/self` are restricted to moderators only. Moderators have unrestricted access to all endpoints. Only a moderator can promote another user to a moderator role.
+
+Note: Restrictions on endpoints can be bypassed by passing the `secret` header in the request. Ask someone on authentication for the secret or see pinned message on authentication channel on Discord.

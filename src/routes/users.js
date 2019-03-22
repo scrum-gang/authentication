@@ -6,7 +6,19 @@ const User = require("../models/User");
 const InvalidToken = require("../models/InvalidToken");
 const auth = require("../auth");
 const config = require("../config");
-const nodemailer = require("nodemailer");
+const mail = require("nodemailer");
+const { google } = require("googleapis");
+const OAuth2 = google.auth.OAuth2;
+
+const oauth2Client = new OAuth2 (
+	config.CLIENT_ID,
+	config.CLIENT_SECRET,
+	"https://developers.google.com/oauthplayground"
+);
+oauth2Client.setCredentials({
+	refresh_token: config.REFRESH_TOKEN
+});
+
 var loginAttemptCtr=0;
 var loginAttempts = new Object();
 var requestCtr = new Object();
@@ -14,8 +26,9 @@ var ipDictLogAtt = new Object();
 var ipDictReqAtt = new Object();
 var timer;
 
+
 module.exports = server => {
-	// register User
+
 	function validateEmail(email) {
 		var re = /\S+@\S+\.\S+/;
 		return re.test(email);
@@ -35,6 +48,49 @@ module.exports = server => {
 			timer = setTimeout(function(){ipDictReqAtt[ip]=0;}, 300000);
 		}
 	}
+
+	var isRevokedCallback = async function (req, payload, done) {
+		if (payload == null) {
+			return done(new errors.UnauthorizedError("Invalid token"), false);
+		}
+		var iat = payload.iss;
+		var tokenId = payload.jti;
+
+		if (
+			await InvalidToken.findOne({ iat: payload.iat, email: payload.email })
+		) {
+			return done(
+				new errors.UnauthorizedError("Token expired. Please log back in."),
+				true
+			);
+		} else {
+			return done(null, false);
+		}
+	};
+
+	function moderator(req) {
+		const bearer = req.header("Authorization");
+		const token = bearer.split(" ")[1];
+		const payload = jwt.decode(token);
+
+		if (payload.type.toLowerCase() == "moderator" || req.header("secret") == config.MOD_SECRET) {
+			config.ENV == "development" && console.log("You're a mod!");
+			return true;
+		} else {
+			config.ENV == "development" && console.log("Not a mod you hackerman");
+			return false;
+		}
+	}
+
+	server.get("/", async (req, res, next) => {
+		var body = "<html><head><meta charset='UTF-8'></head><body>👮 Welcome to the Jobhub Authentication Microservice! 👮</body></html>";
+		res.writeHead(200, {
+			"Content-Length": Buffer.byteLength(body),
+			"Content-Type": "text/html"
+		});
+		res.write(body);
+		res.end();
+	});
 
 	server.post("/signup", async (req, res, next) => {
 
@@ -124,50 +180,57 @@ module.exports = server => {
 		});
 	});
 
-	function sendEmail(host, user) {
-		const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
-			expiresIn: "30m"
+	function sendEmail (host, user) {
+		const token = jwt.sign({ id: user.id, email: user.email, type: user.type }, config.JWT_SECRET, {
+			expiresIn: "15m"
 		});
 
-		var transporter = nodemailer.createTransport({
-			service: "gmail.com",
-			auth: {
-				user: "authboiis@gmail.com",
-				pass: "Boi1s42069"
-			}
-		});
+		if (config.ENV != "test" && config.ENV != "staging-test") {
 
-		const parts = token.split(".");
+			var transporter = mail.createTransport({
+				service: "gmail",
+				auth: {
+					type: "OAuth2",
+					user: "authboiis@gmail.com",
+					clientId: config.CLIENT_ID,
+					clientSecret: config.CLIENT_SECRET,
+					refreshToken: config.REFRESH_TOKEN
+				}
+			});
 
-		const link =
-			"http://" +
-			host +
-			"/verify/" +
-			parts[0] +
-			"/" +
-			parts[1] +
-			"/" +
-			parts[2];
+			const parts = token.split(".");
 
-		var mailOptions = {
-			from: "Authboiis",
-			to: user.email,
-			subject: "JobHub Account Verification",
-			html:
-				"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
-				link +
-				">Click here to verify</a>" +
-				"<br> Thanks for using JobHub!"
-		};
+			const link =
+				"http://" +
+				host +
+				"/verify?header=" +
+				parts[0] +
+				"&payload=" +
+				parts[1] +
+				"&signature=" +
+				parts[2];
 
-		transporter.sendMail(mailOptions, function(error, info) {
-			if (error) {
-				console.log(error);
-			} else {
-				console.log("Email sent: " + info.response);
-			}
-		});
+			const mailOptions = {
+				from: "authboiis@gmail.com",
+				to: user.email,
+				subject: "JobHub Account Verification",
+				html:
+					"Hello New JobHub User!<br> Please click on the link below to verify your email.<br><a href=" +
+					link +
+					">Click here to verify</a>" +
+					"<br> Thanks for using JobHub!"
+			};
+
+			transporter.sendMail(mailOptions, function (err, info) {
+				if (err)
+					console.log(err);
+				else
+					console.log(info);
+				transporter.close();
+			});
+		}
 	}
+
 
 	server.post("/resend", async (req, res, next) => {
 
@@ -181,17 +244,19 @@ module.exports = server => {
 		const { email } = req.body;
 		const user = await User.findOne({ email });
 
-		if (user === null) {
-			return next(new errors.BadRequestError("No user with given email"));
-		} else {
-			if (user.verified) {
-				return next(new errors.BadRequestError("User is already verified."));
+
+			if (user === null) {
+				return next(new errors.BadRequestError("No user with given email"));
+			} else {
+				if (user.verified) {
+					return next(new errors.BadRequestError("User is already verified."));
+				}
+				const host = req.header("Host");
+				sendEmail(host, user);
+				res.send(200);
 			}
-			const host = req.header("Host");
-			sendEmail(host, user);
-			res.send(200);
 		}
-	});
+	);
 
 	// auth user
 	server.post("/login", async (req, res, next) => {
@@ -218,7 +283,7 @@ module.exports = server => {
 				{ id: user.id, email: user.email, type: user.type },
 				config.JWT_SECRET,
 				{
-					expiresIn: "30m"
+					expiresIn: "15m"
 				}
 			);
 
@@ -235,110 +300,125 @@ module.exports = server => {
 		}
 	});
 
-	server.get("/users", async (req, res, next) => {
+	server.get(
+		"/users",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async (req, res, next) => {
+      
+      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      try{
+        newRequest(ip);
+      } catch (err) {
+        return next(new errors.UnauthorizedError(err));
+      }
+      
+			try {
+				if (moderator(req)) {
+					const users = await User.find({});
+					res.send(users);
+					next();
+				} else {
+					return next(new errors.UnauthorizedError("Only moderators may see other users"));
+				}
+			} catch (err) {
+				return next(new errors.InvalidContentError(err));
+			}
+		});
 
-		ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-		try{
-			newRequest(ip);
-		} catch (err) {
-			return next(new errors.UnauthorizedError(err));
-		}
-
-		try {
-			const users = await User.find({});
-			res.send(users);
-			next();
-		} catch (err) {
-			return next(new errors.InvalidContentError(err));
-		}
-	});
-
-	server.get("/users/:id", async (req, res, next) => {
-		try {
-			const users = await User.findById(req.params.id);
-			res.send(users);
-			next();
-		} catch (err) {
-			return next(
-				new errors.ResourceNotFoundError(
-					`There is no user with the id ${req.params.id}`
-				)
-			);
-		}
-	});
+	server.get(
+		"/users/:id",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async (req, res, next) => {
+         
+      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      try{
+        newRequest(ip);
+      } catch (err) {
+        return next(new errors.UnauthorizedError(err));
+      }
+      
+			try {
+				if (moderator(req)) {
+					const users = await User.findById(req.params.id);
+					if (users == null) {
+						return next(new errors.ResourceNotFoundError(`There is no user with the id ${req.params.id}`));
+					}
+					res.send(users);
+					next();
+				} else {
+					return next(new errors.UnauthorizedError("Only moderators may see other users"));
+				}
+			} catch (err) {
+				return next(
+					new errors.ResourceNotFoundError(
+						`There is no user with the id ${req.params.id}`
+					)
+				);
+			}
+		});
 
 	// update user
-	server.put("/users/:id", async (req, res, next) => {
+	server.put(
+		"/users/:id",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async (req, res, next) => {
+            
+      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      try{
+        newRequest(ip);
+      } catch (err) {
+        return next(new errors.UnauthorizedError(err));
+      }
+      
+			if (!req.is("application/json")) {
+				return next(new errors.InvalidContentError("Expects 'application/json"));
+			}
+			if (!moderator(req)) {
+				return next(new errors.UnauthorizedError("Only moderators may update other users"));
+			}
+			if (typeof req.body.verified !== "undefined") {
+				return next(
+					new errors.UnauthorizedError("Cannot modify verified field.")
+				);
+			}
+			const lctype = req.body.type.toLowerCase();
+			if (
+				lctype.localeCompare("applicant") != 0 &&
+				lctype.localeCompare("recruiter") != 0 &&
+				lctype.localeCompare("moderator") != 0
+			) {
+				return next(
+					new errors.InvalidCredentialsError(
+						"Type must be Applicant, Recruiter or Moderator."
+					)
+				);
+			}
 
-		ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-		try{
-			newRequest(ip);
-		} catch (err) {
-			return next(new errors.UnauthorizedError(err));
-		}
+			const updatedUser = req.body;
+			bcrypt.genSalt(10, (err, salt) => {
+				bcrypt.hash(updatedUser.password, salt, async (err, hash) => {
+					updatedUser.password = hash;
+					try {
+						const user = await User.findOneAndUpdate(
+							{ _id: req.params.id },
+							updatedUser
+						);
 
-		if (!req.is("application/json")) {
-			return next(new errors.InvalidContentError("Expects 'application/json"));
-		}
-
-		if (typeof req.body.verified !== "undefined") {
-			return next(
-				new errors.UnauthorizedError("Cannot modify verified field.")
-			);
-		}
-
-		const updatedUser = req.body;
-		bcrypt.genSalt(10, (err, salt) => {
-			bcrypt.hash(updatedUser.password, salt, async (err, hash) => {
-				updatedUser.password = hash;
-				try {
-					const user = await User.findOneAndUpdate(
-						{ _id: req.params.id },
-						updatedUser
-					);
-
-					res.send(200);
-					next();
-				} catch (err) {
-					return next(
-						new errors.ResourceNotFoundError(
-							`There is no user with the id ${req.params.id}`
-						)
-					);
-				}
+						if (user == null) {
+							return next(new errors.ResourceNotFoundError(`There is no user with the id ${req.params.id}`));
+						}
+						res.send(200);
+						next();
+					} catch (err) {
+						return next(
+							new errors.ResourceNotFoundError(
+								`There is no user with the id ${req.params.id}`
+							)
+						);
+					}
+				});
 			});
 		});
-	});
-
-	var isRevokedCallback = async function(req, payload, done) {
-		var iat = payload.iss;
-		var tokenId = payload.jti;
-
-		if (
-			await InvalidToken.findOne({ iat: payload.iat, email: payload.email })
-		) {
-			return done(
-				new errors.UnauthorizedError("Token expired. Please log back in."),
-				true
-			);
-		} else {
-			return done(null, false);
-		}
-	};
-
-	function owner(req) {
-		const bearer = req.header("Authorization");
-		const token = bearer.split(" ")[1];
-		const payload = jwt.decode(token);
-
-		if (payload.id == req.params.id) {
-			config.ENV == "development" && console.log("Its you!");
-			return true;
-		} else {
-			config.ENV == "development" && console.log("Its not you!");
-			return false;
-		}
-	}
 
 	// delete user
 	server.del(
@@ -354,12 +434,15 @@ module.exports = server => {
 		}
 
 			try {
-				if (owner(req)) {
+				if (moderator(req)) {
 					const user = await User.findOneAndRemove({ _id: req.params.id });
+					if (user == null) {
+						return next(new errors.ResourceNotFoundError(`There is no user with the id ${req.params.id}`));
+					}
 					res.send(204);
 					next();
 				} else {
-					return next(new errors.ResourceNotFoundError("Thats not you, silly"));
+					return next(new errors.UnauthorizedError("Only moderators may delete other users"));
 				}
 			} catch (err) {
 				return next(
@@ -389,6 +472,9 @@ module.exports = server => {
 				const payload = jwt.decode(token);
 
 				const user = await User.findById(payload.id);
+				if (user == null) {
+					return next(new errors.ResourceNotFoundError("User does not exist"));
+				}
 				res.send(user);
 				next();
 			} catch (err) {
@@ -419,13 +505,130 @@ module.exports = server => {
 				{ email: email },
 				{ verified: true }
 			);
-
-			res.send({ iat, exp, token }, 200);
+      
+      res.send({ iat, exp, token }, 200);
 			next();
 		} catch (err) {
 			return next(new errors.UnauthorizedError("Invalid token."));
 		}
 	});
+
+	server.put(
+		"/users/self",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async (req, res, next) => {
+            
+      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      try{
+        newRequest(ip);
+      } catch (err) {
+        return next(new errors.UnauthorizedError(err));
+      }
+      
+			if (!req.is("application/json")) {
+				return next(new errors.InvalidContentError("Expects 'application/json"));
+			}
+			if (typeof req.body.verified !== "undefined") {
+				return next(
+					new errors.UnauthorizedError("Cannot modify verified field.")
+				);
+			}
+			const lctype = req.body.type.toLowerCase();
+			if (
+				lctype.localeCompare("applicant") != 0 &&
+				lctype.localeCompare("recruiter") != 0
+			) {
+				return next(
+					new errors.InvalidCredentialsError(
+						"Type must be Applicant or Recruiter."
+					)
+				);
+			}
+			const bearer = req.header("Authorization");
+			const token = bearer.split(" ")[1];
+			const payload = jwt.decode(token);
+
+			const updatedUser = req.body;
+			bcrypt.genSalt(10, (err, salt) => {
+				bcrypt.hash(updatedUser.password, salt, async (err, hash) => {
+					updatedUser.password = hash;
+					try {
+						const user = await User.findOneAndUpdate(
+							{ _id: payload.id },
+							updatedUser
+						);
+
+						if (user == null) {
+							return next(new errors.ResourceNotFoundError(`There is no user with the id ${payload.id}`));
+						}
+						res.send(200);
+						next();
+					} catch (err) {
+						return next(
+							new errors.ResourceNotFoundError(
+								`There is no user with the id ${payload.id}`
+							)
+						);
+					}
+				});
+			});
+		}
+	);
+
+	server.del(
+		"/users/self",
+		rjwt({ secret: config.JWT_SECRET, isRevoked: isRevokedCallback }),
+		async(req, res, next) => {
+            
+      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      try{
+        newRequest(ip);
+      } catch (err) {
+        return next(new errors.UnauthorizedError(err));
+      }
+      
+			const bearer = req.header("Authorization");
+			const token = bearer.split(" ")[1];
+			const payload = jwt.decode(token);
+
+			await User.findOneAndRemove({ _id: payload.id });
+			res.send(204);
+			next();
+		}
+	);
+
+	server.get(
+		"/verify",
+		async (req, res, next) => {
+            
+      ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      try{
+        newRequest(ip);
+      } catch (err) {
+        return next(new errors.UnauthorizedError(err));
+      }
+      
+			try {
+				const token =
+					req.query.header +
+					"." +
+					req.query.payload +
+					"." +
+					req.query.signature;
+				const { email, iat, exp } = jwt.decode(token);
+
+				await User.findOneAndUpdate(
+					{ email: email },
+					{ verified: true }
+				);
+
+				res.send({ iat, exp, token }, 200);
+				next();
+			} catch (err) {
+				return next(new errors.UnauthorizedError("Invalid token."));
+			}
+		}
+	);
 
 	server.post(
 		"/logout",
