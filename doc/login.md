@@ -29,6 +29,16 @@ Returns session token for existing User on succesful login.
 
 ```json
 {
+    "user": {
+        "_id": "[user ID]",
+        "email": "[email]",
+        "password": "[hashed password]",
+        "type": "[user type]",
+        "verified": true,
+        "created_at": "[account creation date]",
+        "updated_at": "[last account update]",
+        "__v": 0
+    },
     "iat": "[Token issued at]",
     "exp": "[Token expiry]",
     "token": "[JWT token]"
