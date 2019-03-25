@@ -1,5 +1,6 @@
 # Authentication - Jobhub
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/c88b6cc8bdff4faca6f3880b0e945be1)](https://app.codacy.com/app/alexH2456/authentication?utm_source=github.com&utm_medium=referral&utm_content=scrum-gang/authentication&utm_campaign=Badge_Grade_Dashboard)
 [![Build Status](https://travis-ci.com/scrum-gang/authentication.svg?branch=master)](https://travis-ci.com/scrum-gang/authentication)
 [![Coverage Status](https://coveralls.io/repos/github/scrum-gang/authentication/badge.svg?branch=master)](https://coveralls.io/github/scrum-gang/authentication?branch=master)
 
