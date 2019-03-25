@@ -6,7 +6,9 @@ cache:
     - "node_modules"
 script:
   - npm test
-  - npm run staging
+  - if [ "$TRAVIS_BRANCH" == "master" ] || [ "$TRAVIS_BRANCH" == "development" ] ; then
+      npm run staging;
+    fi
 after_success: npm run coverage
 deploy:
   provider: heroku

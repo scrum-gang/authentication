@@ -25,7 +25,10 @@ Returns corresponding user given JWT token.
     "email": "[User email]",
     "password": "[User password]",
     "type": "[User type]",
-    "verified": true
+    "verified": true,
+    "created_at": "[account creation date]",
+    "updated_at": "[last account update]",
+    "__v": 0
 }
 ```
 
